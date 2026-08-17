@@ -3,7 +3,14 @@
 import { memo, useMemo } from "react"
 import { useReport } from "./context.ts"
 import { isCode, nodeName, pageCopy } from "./copy.tsx"
-import { fold, kidsOf, maxCost, moneyFine, pctOf, type CostNode } from "./model.ts"
+import {
+  foldSmallNodes,
+  childNodes,
+  highestCost,
+  moneyFine,
+  percentageOf,
+  type CostNode,
+} from "./model.ts"
 import { vtName } from "./Motion.tsx"
 import { hoverBind, useHover } from "./store.ts"
 
@@ -11,36 +18,36 @@ import { hoverBind, useHover } from "./store.ts"
    lands inside this panel, null otherwise. */
 const Panel = memo(function Panel({
   panel,
-  gname,
+  groupName,
   maxPanel,
   kids,
   hit,
   anyHover,
 }: {
   panel: CostNode
-  gname: string
+  groupName: string
   maxPanel: number
   kids: CostNode[]
   hit: string | null
   anyHover: boolean
 }): React.JSX.Element {
-  const { state, pal, amt, reqs, drill } = useReport()
+  const { state, palette, formatAmount, requestCount, drillInto } = useReport()
   const t = pageCopy()
-  const h = pal.hue(gname)
-  const key = gname + "›" + panel.name
+  const h = palette.hue(groupName)
+  const key = groupName + "›" + panel.name
   const dim = anyHover && !hit
-  const maxKid = maxCost(kids)
+  const maxKid = highestCost(kids)
 
   /* Two different footers, and the difference matters: a panel with no children is a genuine
      leaf, while one whose children sum short of it has been filtered by the query and must say
      so rather than appear to under-count. */
-  const kidsAll = kidsOf(panel) || []
-  const shown = kids.reduce((a, k) => a + k.cost, 0)
+  const kidsAll = childNodes(panel) || []
+  const shown = kids.reduce((a, childNode) => a + childNode.cost, 0)
   const foot = !kidsAll.length
     ? t.panels.leaf
     : Math.abs(shown - panel.cost) < 0.01
       ? ""
-      : t.panels.shown(amt(shown), amt(panel.cost))
+      : t.panels.shown(formatAmount(shown), formatAmount(panel.cost))
 
   /* Named for the filter transition -- see `vtName`. The key is the panel's identity rather than
      its place in the grid, which is the whole point: a query that removes the third panel moves
@@ -59,70 +66,76 @@ const Panel = memo(function Panel({
             see. */}
         <button
           type="button"
-          data-code={isCode(t, panel.name, null, gname) ? 1 : 0}
+          data-code={isCode(t, panel.name, null, groupName) ? 1 : 0}
           style={
             /* SAFETY: React's CSSProperties omits the custom CSS variable the stylesheet reads. */
             { "--hue": h, opacity: dim ? 0.55 : 1 } as React.CSSProperties
           }
-          onClick={() => drill(panel.name)}
-          {...hoverBind({ key, name: panel.name, cost: panel.cost, under: null, group: gname })}
+          onClick={() => drillInto(panel.name)}
+          {...hoverBind({
+            key,
+            name: panel.name,
+            cost: panel.cost,
+            parentName: null,
+            group: groupName,
+          })}
         >
           {nodeName(t, panel)}
         </button>
-        <span className="pc">{amt(panel.cost)}</span>
+        <span className="pc">{formatAmount(panel.cost)}</span>
       </div>
       <div className="panbar">
         <span className="track">
           <span
             style={{
-              width: `${Math.max(pctOf(panel.cost, maxPanel), 0.8)}%`,
+              width: `${Math.max(percentageOf(panel.cost, maxPanel), 0.8)}%`,
               background: h,
               opacity: dim ? 0.5 : 1,
             }}
           />
         </span>
         <span className="pr">
-          {state.pctOnly
-            ? t.panels.ofBill(amt(panel.cost))
-            : t.panels.perReq(moneyFine(panel.cost / reqs, 4))}
+          {state.amountsHidden
+            ? t.panels.ofBill(formatAmount(panel.cost))
+            : t.panels.perReq(moneyFine(panel.cost / requestCount, 4))}
         </span>
       </div>
       <div className="panitems">
-        {kids.map((k) => {
-          const kk = key + "›" + k.name
-          const active = hit === kk
+        {kids.map((childNode) => {
+          const childKey = key + "›" + childNode.name
+          const active = hit === childKey
           return (
             <div
               className="pi"
-              key={kk}
-              style={vtName(kk)}
+              key={childKey}
+              style={vtName(childKey)}
               data-on={active ? 1 : 0}
               {...hoverBind({
-                key: kk,
-                name: k.name,
-                cost: k.cost,
-                under: panel.name,
-                group: gname,
+                key: childKey,
+                name: childNode.name,
+                cost: childNode.cost,
+                parentName: panel.name,
+                group: groupName,
               })}
             >
               <button
                 type="button"
-                data-folded={k.folded ? 1 : 0}
-                data-code={isCode(t, k.name, panel.name, gname) ? 1 : 0}
-                onClick={() => drill(panel.name)}
+                data-folded={childNode.folded ? 1 : 0}
+                data-code={isCode(t, childNode.name, panel.name, groupName) ? 1 : 0}
+                onClick={() => drillInto(panel.name)}
               >
-                {nodeName(t, k)}
+                {nodeName(t, childNode)}
               </button>
               <span className="tk">
                 <span
                   style={{
-                    width: `${Math.max(pctOf(k.cost, maxKid), 1)}%`,
+                    width: `${Math.max(percentageOf(childNode.cost, maxKid), 1)}%`,
                     background: h,
                     opacity: active ? 1 : 0.6,
                   }}
                 />
               </span>
-              <span className="pv">{amt(k.cost)}</span>
+              <span className="pv">{formatAmount(childNode.cost)}</span>
             </div>
           )
         })}
@@ -133,10 +146,10 @@ const Panel = memo(function Panel({
 })
 
 export function Panels(): React.JSX.Element {
-  const { d, focus, state } = useReport()
+  const { dataset, focus, state } = useReport()
   const hover = useHover()
-  const hk = hover?.key ?? null
-  const q = state.query.trim().toLowerCase()
+  const hoverKey = hover?.key ?? null
+  const query = state.query.trim().toLowerCase()
   const rootCost = focus.node.cost || 1
 
   /* Memoised for node identity, so a hover leaves the memoised panels' props untouched. */
@@ -144,34 +157,37 @@ export function Panels(): React.JSX.Element {
     /* At the root the nine groups are shown whole -- they are the page's spine, and folding one
        away would hide a role rather than a long tail. */
     const src: CostNode[] = focus.groupName
-      ? fold(focus.node.items || [], rootCost)
-      : d.groups.slice().sort((a, b) => b.cost - a.cost)
+      ? foldSmallNodes(focus.node.items || [], rootCost)
+      : dataset.groups.slice().sort((a, b) => b.cost - a.cost)
     return {
-      maxPanel: maxCost(src),
+      maxPanel: highestCost(src),
       panels: src
-        .map((p) => {
-          const kids = fold(kidsOf(p) || [], p.cost).filter(
-            (k) => !q || k.name.toLowerCase().includes(q) || p.name.toLowerCase().includes(q),
+        .map((panelNode) => {
+          const kids = foldSmallNodes(childNodes(panelNode) || [], panelNode.cost).filter(
+            (childNode) =>
+              !query ||
+              childNode.name.toLowerCase().includes(query) ||
+              panelNode.name.toLowerCase().includes(query),
           )
-          return { p, kids }
+          return { panelNode, kids }
         })
-        .filter(({ kids }) => !q || kids.length),
+        .filter(({ kids }) => !query || kids.length),
     }
-  }, [d, focus, rootCost, q])
+  }, [dataset, focus, rootCost, query])
 
   return (
     <div className="panels">
-      {panels.map(({ p, kids }) => {
-        const key = (focus.groupName || p.name) + "›" + p.name
+      {panels.map(({ panelNode, kids }) => {
+        const key = (focus.groupName || panelNode.name) + "›" + panelNode.name
         return (
           <Panel
-            key={p.name}
-            panel={p}
-            gname={focus.groupName || p.name}
+            key={panelNode.name}
+            panel={panelNode}
+            groupName={focus.groupName || panelNode.name}
             maxPanel={maxPanel}
             kids={kids}
-            hit={hk && (hk === key || hk.startsWith(key + "›")) ? hk : null}
-            anyHover={!!hk}
+            hit={hoverKey && (hoverKey === key || hoverKey.startsWith(key + "›")) ? hoverKey : null}
+            anyHover={!!hoverKey}
           />
         )
       })}

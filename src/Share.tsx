@@ -117,7 +117,7 @@ export function CopyChartButton(): React.JSX.Element {
 }
 
 export function ShareButton(): React.JSX.Element {
-  const { d, state } = useReport()
+  const { dataset, state } = useReport()
   const [at, run] = useChartPng()
   const t = pageCopy()
   const words = shareWords(t)
@@ -129,7 +129,8 @@ export function ShareButton(): React.JSX.Element {
         ? location.origin + location.pathname
         : null
     const url =
-      "https://x.com/intent/post?text=" + encodeURIComponent(postText(d, state.pctOnly, home))
+      "https://x.com/intent/post?text=" +
+      encodeURIComponent(postText(dataset, state.amountsHidden, home))
     /* Opened last, and only on success, so a blocked popup cannot cost the reader the image. */
     void run(() => {
       window.open(url, "_blank", "noopener,noreferrer")

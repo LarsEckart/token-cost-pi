@@ -16,17 +16,18 @@ export interface CostNode {
   foldCount?: number
   self?: boolean
   id?: GroupId
-  short?: string
+  shortName?: string
 }
 
-/** Rows below this share of their parent, or past this rank, fold into one labelled "other". */
+/** Rows below this share of their parent, or past this rank, become one labelled "other" row. */
 export const FOLD_MIN = 0.008
 export const FOLD_MAX = 14
 
 /** Percentage of a maximum, guarded. */
-export const pctOf = (v: number, max: number): number => (max > 0 && v >= 0 ? (v / max) * 100 : 0)
+export const percentageOf = (v: number, max: number): number =>
+  max > 0 && v >= 0 ? (v / max) * 100 : 0
 
-export const maxCost = (list: CostNode[] | null | undefined): number =>
+export const highestCost = (list: CostNode[] | null | undefined): number =>
   list && list.length ? Math.max(...list.map((x) => x.cost || 0)) : 0
 
 /** Currency values use one fixed locale because the app only ships English copy. */
@@ -46,8 +47,8 @@ export const moneyFine = (n: number, digits: number): string => fmt(digits).form
 
 export const count = (n: number): string => n.toLocaleString("en-US")
 
-/** Keep the top items, fold the tail into one labelled row. */
-export function fold(
+/** Keep the top items and fold the tail into one labelled row. */
+export function foldSmallNodes(
   list: CostNode[] | null | undefined,
   parentCost: number,
   noFold?: boolean,
@@ -70,16 +71,16 @@ export function fold(
   return keep
 }
 
-/** A node is only worth opening if it actually branches. */
-export function branches(node: CostNode | null | undefined): boolean {
+/** A node is only worth opening when it has child nodes to show. */
+export function hasBranches(node: CostNode | null | undefined): boolean {
   const k = (node && (node.items || node.children)) || []
   return k.length > 1 || (k.length === 1 && (k[0].items || k[0].children || []).length > 1)
 }
 
 /** The same question, answered with the list: the children worth drawing as a level of their
  *  own, or null. */
-export function kidsOf(node: CostNode | null | undefined): CostNode[] | null {
-  if (!node || !branches(node)) return null
+export function childNodes(node: CostNode | null | undefined): CostNode[] | null {
+  if (!node || !hasBranches(node)) return null
   return node.items || node.children || null
 }
 
@@ -90,21 +91,21 @@ export function kidsOf(node: CostNode | null | undefined): CostNode[] | null {
  *  containing tools this file has never heard of still colours consistently. */
 export interface Palette {
   hue(group: string | null | undefined): string
-  short(name: string): string | undefined
+  shortName(group: string): string | undefined
 }
 
-export function palette(d: Dataset): Palette {
-  const hues = new Map<string, string>(),
-    shorts = new Map<string, string>()
-  const order = GROUPS.map((g) => g.id)
-  ;(d.groups || []).forEach((g) => {
-    const i = order.indexOf(g.id)
-    hues.set(g.name, i >= 0 && i < 8 ? `var(--c${i + 1})` : "var(--cn)")
-    if (g.short) shorts.set(g.name, g.short)
+export function createPalette(dataset: Dataset): Palette {
+  const hues = new Map<string, string>()
+  const shortNames = new Map<string, string>()
+  const order = GROUPS.map((group) => group.id)
+  ;(dataset.groups || []).forEach((group) => {
+    const index = order.indexOf(group.id)
+    hues.set(group.name, index >= 0 && index < 8 ? `var(--c${index + 1})` : "var(--cn)")
+    if (group.shortName) shortNames.set(group.name, group.shortName)
   })
   return {
-    hue: (g) => (g && hues.get(g)) || "var(--cn)",
-    short: (name) => shorts.get(name),
+    hue: (group) => (group && hues.get(group)) || "var(--cn)",
+    shortName: (group) => shortNames.get(group),
   }
 }
 
@@ -131,22 +132,26 @@ export function slug(name: string): string {
 /** And back, against the tree on show: the slug drops the case and the punctuation, so the names
  *  it could have come from are the only place it can be read. One that names nothing at this
  *  level ends the path rather than being carried as a name no view will find. */
-export function pathOf(d: Dataset, slugs: string[]): string[] {
-  const g = d.groups.find((x) => slug(x.name) === slugs[0])
-  if (!g) return []
-  const it = slugs[1] ? (g.items || []).find((x) => slug(x.name) === slugs[1]) : null
-  return it ? [g.name, it.name] : [g.name]
+export function pathFromSlugs(dataset: Dataset, slugs: string[]): string[] {
+  const group = dataset.groups.find((x) => slug(x.name) === slugs[0])
+  if (!group) return []
+  const it = slugs[1] ? (group.items || []).find((x) => slug(x.name) === slugs[1]) : null
+  return it ? [group.name, it.name] : [group.name]
 }
 
 /** The subtree the page is currently focused on, from a breadcrumb path of at most two levels. */
-export function focusOf(d: Dataset, path: string[]): Focus {
-  let node: CostNode = { name: "all", cost: d.total, items: d.groups }
+export function focusForPath(dataset: Dataset, path: string[]): Focus {
+  let node: CostNode = { name: "all", cost: dataset.total, items: dataset.groups }
   let group: CostNode | null = null
   if (path[0]) {
-    const g = d.groups.find((x) => x.name === path[0])
-    if (g) {
-      group = g
-      node = { name: g.name, cost: g.cost, items: g.items }
+    const matchedGroup = dataset.groups.find((item) => item.name === path[0])
+    if (matchedGroup) {
+      group = matchedGroup
+      node = {
+        name: matchedGroup.name,
+        cost: matchedGroup.cost,
+        items: matchedGroup.items,
+      }
     }
     if (path[1] && group) {
       const it = (group.items || []).find((x) => x.name === path[1])
@@ -167,7 +172,7 @@ export interface SunArc {
   ring: number
   a0: number
   a1: number
-  under: string | null
+  parentName: string | null
 }
 
 /** An innermost sector and everything beneath it. */
@@ -177,7 +182,7 @@ export interface SunBranch {
   group: string
   cost: number
   /** Line items under this sector *before* folding, so the legend can say how many there really
-   *  are rather than how many survived the fold. */
+   *  are rather than how many remain after folding. */
   items: number
   /** True for the synthetic tail row: it stands for many line items, and saying it has none
    *  underneath would read as "this is one thing" when it is the opposite. */
@@ -198,7 +203,7 @@ function shareIn(list: CostNode[]): (cost: number) => number {
 
 /** Lay the focused subtree out as nested rings. */
 export function sunburst(focus: Focus, rings: number = SUN_RINGS): SunBranch[] {
-  const top = fold(focus.node.items || [], focus.node.cost || 1, !focus.groupName)
+  const top = foldSmallNodes(focus.node.items || [], focus.node.cost || 1, !focus.groupName)
   const share = shareIn(top)
   const out: SunBranch[] = []
   let at = 0
@@ -215,11 +220,11 @@ export function sunburst(focus: Focus, rings: number = SUN_RINGS): SunBranch[] {
       a0: number,
       span: number,
       key: string,
-      under: string | null,
+      parentName: string | null,
     ): void => {
-      arcs.push({ key, name: node.name, cost: node.cost, ring, a0, a1: a0 + span, under })
+      arcs.push({ key, name: node.name, cost: node.cost, ring, a0, a1: a0 + span, parentName })
       if (ring + 1 >= rings || span < SUN_MIN_SPLIT) return
-      const kids = fold(kidsOf(node) || [], node.cost)
+      const kids = foldSmallNodes(childNodes(node) || [], node.cost)
       if (!kids.length) return
       /* Scaled by what the children actually sum to, so the ring fills its parent's sweep even
          where rounding leaves the two a cent apart. */
@@ -240,7 +245,7 @@ export function sunburst(focus: Focus, rings: number = SUN_RINGS): SunBranch[] {
       name: n.name,
       group,
       cost: n.cost,
-      items: (kidsOf(n) || []).length,
+      items: (childNodes(n) || []).length,
       folded: !!n.folded,
       arcs,
     })
@@ -256,12 +261,12 @@ export interface LedgerRow {
   group: string | null
   key: string
   open: boolean
-  hasKids: boolean
+  hasChildren: boolean
   /** The hover key for this row, built the way the charts build theirs: `group›item` for a
    *  top-level row and `group›item›child` below it. */
-  hkey: string
+  hoverKey: string
   /** What this row hangs under, or null at the top level. */
-  under: string | null
+  parentName: string | null
 }
 
 export interface Ledger {
@@ -276,12 +281,12 @@ export const rowIsOpen = (open: Record<string, boolean>, key: string, depth: num
 
 /** Flatten the focused subtree into ledger rows, honouring open state and the query. */
 export function ledger(
-  d: Dataset,
+  dataset: Dataset,
   path: string[],
   open: Record<string, boolean>,
   query: string,
 ): Ledger {
-  const at = focusOf(d, path)
+  const at = focusForPath(dataset, path)
   const q = query.trim().toLowerCase()
   const rows: LedgerRow[] = []
   let recon = 0
@@ -293,19 +298,19 @@ export function ledger(
     parent: string | null,
   ): void => {
     const parentCost = list.reduce((s, n) => s + n.cost, 0) || 1
-    fold(list, parentCost, depth === 0 && !at.groupName).forEach((n) => {
-      const g = depth === 0 && !at.groupName ? n.name : inherit
-      const kids = kidsOf(n)
-      const key = g + "›" + n.name + "›" + depth
+    foldSmallNodes(list, parentCost, depth === 0 && !at.groupName).forEach((n) => {
+      const group = depth === 0 && !at.groupName ? n.name : inherit
+      const kids = childNodes(n)
+      const key = group + "›" + n.name + "›" + depth
       /* The disclosure key above is this table's own and carries the depth; the hover key is
          shared with the charts and carries the path, which is why they are not one string. */
-      const hkey = parent ? `${g}›${parent}›${n.name}` : `${g}›${n.name}`
+      const hoverKey = parent ? `${group}›${parent}›${n.name}` : `${group}›${n.name}`
       const match = !q || n.name.toLowerCase().includes(q)
       const kidMatch = kids
         ? kids.some(
             (k) =>
               k.name.toLowerCase().includes(q) ||
-              (k.children || []).some((c) => c.name.toLowerCase().includes(q)),
+              (k.children || []).some((child) => child.name.toLowerCase().includes(q)),
           )
         : false
       if (q && !match && !kidMatch) return
@@ -316,14 +321,14 @@ export function ledger(
       rows.push({
         node: n,
         depth,
-        group: g,
+        group: group,
         key,
         open: isOpen,
-        hasKids: !!(kids && kids.length),
-        hkey,
-        under: parent,
+        hasChildren: !!(kids && kids.length),
+        hoverKey,
+        parentName: parent,
       })
-      if (kids && kids.length && isOpen) walk(kids, depth + 1, g, n.name)
+      if (kids && kids.length && isOpen) walk(kids, depth + 1, group, n.name)
     })
   }
 
@@ -432,83 +437,90 @@ export const vouched = (gid: GroupId, name: string): boolean =>
 
 /** A share said the way a caption needs it. */
 const share = (cost: number, total: number): string => {
-  const p = pctOf(cost, total)
+  const p = percentageOf(cost, total)
   return (p > 0 && p < 1 ? p.toFixed(1) : p.toFixed(0)) + "%"
 }
 
 /** What every caption draws on, gathered once so the variants below are only sentences. */
 export interface Facts {
-  d: Dataset
-  masked: boolean
+  dataset: Dataset
+  amountsHidden: boolean
   /** The English sentences used in a shared post. */
-  c: PostCopy
+  copy: PostCopy
   scope: string
   /** Nameable leaves from the tool-shaped groups, biggest first. */
   tools: CostNode[]
   /** The shell half of the same list: programs, biggest first. */
-  progs: CostNode[]
-  typed: CostNode | null
+  programs: CostNode[]
+  typedMessages: CostNode | null
   /** How many times the model's prose was re-billed as input for every dollar spent generating
    *  it. */
-  carry: number
+  carryMultiplier: number
   /** The insight lines, for the captions that quote one of them on its own. */
-  ins: Insights
+  insights: Insights
   /** What the model's own output cost, which the insights carry only in pieces. */
-  wrote: number
+  outputCost: number
   /** Dollars of bill for every dollar of typing. */
-  perTyped: number
-  amt: (cost: number) => string
+  costPerTypedDollar: number
+  formatAmount: (cost: number) => string
   outOf: (cost: number) => string
   /** Whether a figure survives being formatted. */
-  sayable: (cost: number) => boolean
+  isSayable: (cost: number) => boolean
   /** A share, or null where it rounds away to nothing. */
-  pct: (cost: number) => string | null
+  formatShare: (cost: number) => string | null
   /** A cost divided n ways -- always null when covered, because a per-request figure is money
    *  whatever the toolbar says. */
-  per: (cost: number, n: number) => string | null
+  formatPerUnit: (cost: number, count: number) => string | null
 }
 
-function factsOf(d: Dataset, pctOnly: boolean): Facts {
-  const c = postCopy()
-  const amt = (cost: number): string => (pctOnly ? share(cost, d.total) : money(cost))
-  const sayable = (cost: number): boolean => /[1-9]/.test(amt(cost))
+function factsOf(dataset: Dataset, amountsHidden: boolean): Facts {
+  const copy = postCopy()
+  const formatAmount = (cost: number): string =>
+    amountsHidden ? share(cost, dataset.total) : money(cost)
+  const isSayable = (cost: number): boolean => /[1-9]/.test(formatAmount(cost))
 
   const leaves = (...ids: GroupId[]): CostNode[] =>
-    d.groups
-      .filter((g) => ids.includes(g.id))
-      .flatMap((g) =>
+    dataset.groups
+      .filter((group) => ids.includes(group.id))
+      .flatMap((group) =>
         /* SAFETY: TreeItem has every CostNode field used by the report views. */ (
-          g.items as CostNode[]
-        ).filter((n) => vouched(g.id, n.name)),
+          group.items as CostNode[]
+        ).filter((n) => vouched(group.id, n.name)),
       )
-      .filter((n) => sayable(n.cost))
+      .filter((n) => isSayable(n.cost))
       .sort((a, b) => b.cost - a.cost)
 
-  const { proseGen, proseCarry } = d.insights
+  const { generatedProse, carriedProse } = dataset.insights
   // SAFETY: A TreeGroup has every CostNode field the caption uses.
-  const typed = (d.groups.find((g) => g.id === "typed") as CostNode | undefined) || null
+  const typedMessages =
+    (dataset.groups.find((group) => group.id === "typed") as CostNode | undefined) || null
   return {
-    d,
-    masked: pctOnly,
-    c,
-    scope: d.days ? c.scopeDays(d.days) : c.scopeSessions(d.sessions, count(d.sessions)),
+    dataset,
+    amountsHidden,
+    copy,
+    scope: dataset.days
+      ? copy.scopeDays(dataset.days)
+      : copy.scopeSessions(dataset.sessions, count(dataset.sessions)),
     tools: leaves("shell", "ingest", "emit", "twoway"),
-    progs: leaves("shell"),
-    typed,
-    carry: proseGen > 0 && proseCarry > 0 ? proseCarry / proseGen : 0,
-    ins: d.insights,
-    wrote: d.groups.find((g) => g.id === "output")?.cost || 0,
-    perTyped: typed && typed.cost > 0 ? d.total / typed.cost : 0,
-    amt,
-    sayable,
+    programs: leaves("shell"),
+    typedMessages,
+    carryMultiplier: generatedProse > 0 && carriedProse > 0 ? carriedProse / generatedProse : 0,
+    insights: dataset.insights,
+    outputCost: dataset.groups.find((group) => group.id === "output")?.cost || 0,
+    costPerTypedDollar:
+      typedMessages && typedMessages.cost > 0 ? dataset.total / typedMessages.cost : 0,
+    formatAmount,
+    isSayable,
     outOf: (cost) =>
-      pctOnly ? c.outOfMasked(share(cost, d.total)) : c.outOf(money(cost), money(d.total)),
-    pct: (cost) => {
-      const s = share(cost, d.total)
+      amountsHidden
+        ? copy.outOfMasked(share(cost, dataset.total))
+        : copy.outOf(money(cost), money(dataset.total)),
+    formatShare: (cost) => {
+      const s = share(cost, dataset.total)
       return /[1-9]/.test(s) ? s : null
     },
-    per: (cost, n) => {
-      if (pctOnly || !(n > 0)) return null
+    formatPerUnit: (cost, n) => {
+      if (amountsHidden || !(n > 0)) return null
       const each = money(cost / n)
       return /[1-9]/.test(each) ? each : null
     },
@@ -524,190 +536,231 @@ export interface Draft {
 /** The variants, each returning null when the data cannot support it honestly rather than
  *  printing a hole. The first six carry one phrasing; the styles added after them carry two or
  *  three, so a style that keeps coming up does not arrive in the same words twice. */
-const VARIANTS: ((f: Facts) => Draft | Draft[] | null)[] = [
+const VARIANTS: ((facts: Facts) => Draft | Draft[] | null)[] = [
   /* A. The tool question. */
-  (f) => {
-    const [a, b] = f.tools
+  (facts) => {
+    const [a, b] = facts.tools
     if (!a) return null
     /* Covered, the scope has nowhere good to sit: "12% of it over 31 days" reads as a rate
        rather than as a share of one bill, and the image carries the span anyway. */
-    return f.c.a({
+    return facts.copy.toolQuestion({
       name: a.name,
-      amt: f.amt(a.cost),
-      outOf: f.outOf(a.cost),
-      scope: f.scope,
-      masked: f.masked,
+      amount: facts.formatAmount(a.cost),
+      outOf: facts.outOf(a.cost),
+      scope: facts.scope,
+      masked: facts.amountsHidden,
       second: b ? b.name : null,
-      secondAmt: b ? f.amt(b.cost) : "",
+      secondAmount: b ? facts.formatAmount(b.cost) : "",
     })
   },
 
   /* B. The commands nobody prices. */
-  (f) => {
-    if (f.progs.length < 2) return null
-    const [a, ...rest] = f.progs.slice(0, 3)
-    return f.c.b({
+  (facts) => {
+    if (facts.programs.length < 2) return null
+    const [a, ...rest] = facts.programs.slice(0, 3)
+    return facts.copy.commandCosts({
       name: a.name,
-      amt: f.amt(a.cost),
-      scope: f.scope,
-      masked: f.masked,
-      rest: rest.map((n) => ({ name: n.name, amt: f.amt(n.cost) })),
+      amount: facts.formatAmount(a.cost),
+      scope: facts.scope,
+      masked: facts.amountsHidden,
+      rest: rest.map((n) => ({ name: n.name, amount: facts.formatAmount(n.cost) })),
     })
   },
 
   /* C. The agent framing, and the one that is always viable: it asks nothing of the shape of the
      tree, so there is never a dataset with no caption to pick. */
-  (f) => {
-    const typedShare = f.typed ? share(f.typed.cost, f.d.total) : null
-    return f.c.c({
-      total: f.masked || !f.sayable(f.d.total) ? null : money(f.d.total),
-      scope: f.scope,
-      requests: count(f.d.requests),
+  (facts) => {
+    const typedShare = facts.typedMessages
+      ? share(facts.typedMessages.cost, facts.dataset.total)
+      : null
+    return facts.copy.agentSummary({
+      total:
+        facts.amountsHidden || !facts.isSayable(facts.dataset.total)
+          ? null
+          : money(facts.dataset.total),
+      scope: facts.scope,
+      requests: count(facts.dataset.requests),
       typedShare: typedShare && /[1-9]/.test(typedShare) ? typedShare : null,
     })
   },
 
   /* D. The self-own. */
-  (f) => {
-    if (!f.typed || !f.sayable(f.typed.cost) || pctOf(f.typed.cost, f.d.total) >= 5) return null
-    return f.c.d({ outOf: f.outOf(f.typed.cost) })
+  (facts) => {
+    if (
+      !facts.typedMessages ||
+      !facts.isSayable(facts.typedMessages.cost) ||
+      percentageOf(facts.typedMessages.cost, facts.dataset.total) >= 5
+    )
+      return null
+    return facts.copy.typedShare({ outOf: facts.outOf(facts.typedMessages.cost) })
   },
 
   /* E. Generation against carry, which is this page's whole thesis in one ratio. */
-  (f) => {
-    if (f.carry < 2) return null
-    const { proseGen, proseCarry } = f.d.insights
-    const open = !f.masked && f.sayable(proseGen)
-    return f.c.e({
-      times: `${f.carry.toFixed(0)}×`,
-      gen: open ? money(proseGen) : null,
-      carry: open ? money(proseCarry) : "",
+  (facts) => {
+    if (facts.carryMultiplier < 2) return null
+    const { generatedProse, carriedProse } = facts.dataset.insights
+    const open = !facts.amountsHidden && facts.isSayable(generatedProse)
+    return facts.copy.proseCarryRatio({
+      times: `${facts.carryMultiplier.toFixed(0)}×`,
+      generatedAmount: open ? money(generatedProse) : null,
+      carriedAmount: open ? money(carriedProse) : "",
     })
   },
 
   /* F. The receipt: a statement where the others ask, so the rotation is not five questions in a
      trench coat. */
-  (f) => {
-    const top = f.d.groups[0]
-    if (!top || !(f.d.total > 0)) return null
-    const heading = f.c.said[top.id] || top.name.toLowerCase()
-    return f.c.f({
-      total: f.masked || !f.sayable(f.d.total) ? null : money(f.d.total),
-      scope: f.scope,
+  (facts) => {
+    const top = facts.dataset.groups[0]
+    if (!top || !(facts.dataset.total > 0)) return null
+    const heading = facts.copy.said[top.id] || top.name.toLowerCase()
+    return facts.copy.billReceipt({
+      total:
+        facts.amountsHidden || !facts.isSayable(facts.dataset.total)
+          ? null
+          : money(facts.dataset.total),
+      scope: facts.scope,
       said: heading.length > 44 ? heading.slice(0, 43).trimEnd() + "…" : heading,
-      share: share(top.cost, f.d.total),
+      share: share(top.cost, facts.dataset.total),
     })
   },
 
   /* G. The figures with no sentence around them. */
-  (f) => {
-    const top = f.d.groups[0]
-    const part = top && f.pct(top.cost)
-    if (!top || !part || !(f.d.requests > 0)) return null
-    return f.c.g({
-      total: f.masked || !f.sayable(f.d.total) ? null : money(f.d.total),
-      scope: f.scope,
-      requests: count(f.d.requests),
-      each: f.per(f.d.total, f.d.requests),
-      said: f.c.said[top.id] || top.name.toLowerCase(),
+  (facts) => {
+    const top = facts.dataset.groups[0]
+    const part = top && facts.formatShare(top.cost)
+    if (!top || !part || !(facts.dataset.requests > 0)) return null
+    return facts.copy.billFigures({
+      total:
+        facts.amountsHidden || !facts.isSayable(facts.dataset.total)
+          ? null
+          : money(facts.dataset.total),
+      scope: facts.scope,
+      requests: count(facts.dataset.requests),
+      each: facts.formatPerUnit(facts.dataset.total, facts.dataset.requests),
+      said: facts.copy.said[top.id] || top.name.toLowerCase(),
       share: part,
     })
   },
 
   /* H. What it costs by the day and by the keystroke, which is how a habit is priced. */
-  (f) => {
-    const perDay = f.d.days && f.d.days > 1 ? f.per(f.d.total, f.d.days) : null
-    if (!perDay || !f.d.days) return null
-    return f.c.h({
+  (facts) => {
+    const perDay =
+      facts.dataset.days && facts.dataset.days > 1
+        ? facts.formatPerUnit(facts.dataset.total, facts.dataset.days)
+        : null
+    if (!perDay || !facts.dataset.days) return null
+    return facts.copy.dailyCost({
       perDay,
-      perRequest: f.per(f.d.total, f.d.requests),
-      days: count(f.d.days),
-      requests: count(f.d.requests),
+      perRequest: facts.formatPerUnit(facts.dataset.total, facts.dataset.requests),
+      days: count(facts.dataset.days),
+      requests: count(facts.dataset.requests),
     })
   },
 
   /* I. The ratio between the typing and everything the typing drags in -- the one figure that
      says the same thing covered as it does open, because it carries no unit. */
-  (f) => {
-    if (!f.typed || !(f.perTyped >= 4) || !isFinite(f.perTyped)) return null
-    return f.c.i({
-      times: `${f.perTyped.toFixed(0)}×`,
-      scope: f.scope,
-      requests: count(f.d.requests),
+  (facts) => {
+    if (
+      !facts.typedMessages ||
+      !(facts.costPerTypedDollar >= 4) ||
+      !isFinite(facts.costPerTypedDollar)
+    )
+      return null
+    return facts.copy.typedCostRatio({
+      times: `${facts.costPerTypedDollar.toFixed(0)}×`,
+      scope: facts.scope,
+      requests: count(facts.dataset.requests),
     })
   },
 
   /* J. The thinking nobody reads and everybody buys. */
-  (f) => {
-    const { thinking } = f.ins
-    if (!(thinking > 0) || !f.sayable(thinking)) return null
-    return f.c.j({
-      amt: f.amt(thinking),
-      share: f.masked ? null : f.pct(thinking),
-      scope: f.scope,
-      masked: f.masked,
+  (facts) => {
+    const { reasoning } = facts.insights
+    if (!(reasoning > 0) || !facts.isSayable(reasoning)) return null
+    return facts.copy.reasoningCost({
+      amount: facts.formatAmount(reasoning),
+      share: facts.amountsHidden ? null : facts.formatShare(reasoning),
+      scope: facts.scope,
+      masked: facts.amountsHidden,
     })
   },
 
   /* K. The meter that is already running when you start typing. */
-  (f) => {
-    const { fixed } = f.ins
-    if (!(fixed > 0) || !f.sayable(fixed) || !(f.d.requests > 0)) return null
-    return f.c.k({ amt: f.amt(fixed), requests: count(f.d.requests), scope: f.scope })
+  (facts) => {
+    const { fixedOverhead } = facts.insights
+    if (!(fixedOverhead > 0) || !facts.isSayable(fixedOverhead) || !(facts.dataset.requests > 0))
+      return null
+    return facts.copy.fixedCost({
+      amount: facts.formatAmount(fixedOverhead),
+      requests: count(facts.dataset.requests),
+      scope: facts.scope,
+    })
   },
 
   /* L. The same carry as E, said as a confession rather than as a ratio. */
-  (f) => {
-    const { proseCarry } = f.ins
-    if (!(proseCarry > 0) || !f.sayable(proseCarry)) return null
-    return f.c.l({ amt: f.amt(proseCarry), scope: f.scope, masked: f.masked })
+  (facts) => {
+    const { carriedProse } = facts.insights
+    if (!(carriedProse > 0) || !facts.isSayable(carriedProse)) return null
+    return facts.copy.carriedProseCost({
+      amount: facts.formatAmount(carriedProse),
+      scope: facts.scope,
+      masked: facts.amountsHidden,
+    })
   },
 
   /* M. All promise and no figure, and viable against any dataset because it quotes none. */
-  (f) => f.c.m(),
+  (facts) => facts.copy.contextThesis(),
 
   /* N. The bill as a bill: a column of lines, which is the shape a reader stops scrolling for. */
-  (f) => {
-    const rows = f.d.groups
-      .filter((g) => f.c.said[g.id] && f.sayable(g.cost))
+  (facts) => {
+    const rows = facts.dataset.groups
+      .filter((group) => facts.copy.said[group.id] && facts.isSayable(group.cost))
       .slice(0, 4)
-      .map((g) => ({
-        name: /* SAFETY: The preceding filter keeps only groups with a caption label. */ f.c.said[
-          g.id
-        ] as string,
-        amt: f.amt(g.cost),
+      .map((group) => ({
+        name: /* SAFETY: The preceding filter keeps only groups with a caption label. */ facts.copy
+          .said[group.id] as string,
+        amount: facts.formatAmount(group.cost),
       }))
     if (rows.length < 3) return null
-    return f.c.n({ scope: f.scope, rows })
+    return facts.copy.billLines({ scope: facts.scope, rows })
   },
 
   /* O. Two halves of the bill nobody guesses the order of. */
-  (f) => {
-    const { ingest } = f.ins
-    if (!f.sayable(f.wrote) || !f.sayable(ingest)) return null
-    const hi = Math.max(f.wrote, ingest),
-      lo = Math.min(f.wrote, ingest)
+  (facts) => {
+    const { toolInput } = facts.insights
+    if (!facts.isSayable(facts.outputCost) || !facts.isSayable(toolInput)) return null
+    const higherAmount = Math.max(facts.outputCost, toolInput),
+      lowerAmount = Math.min(facts.outputCost, toolInput)
     /* Too close together and "bigger" is a coin toss the reader was right to lose. */
-    if (!(lo > 0) || hi / lo < 1.2) return null
-    return f.c.o({ wroteMore: f.wrote > ingest, hi: f.amt(hi), lo: f.amt(lo) })
+    if (!(lowerAmount > 0) || higherAmount / lowerAmount < 1.2) return null
+    return facts.copy.outputVsInput({
+      wroteMore: facts.outputCost > toolInput,
+      higherAmount: facts.formatAmount(higherAmount),
+      lowerAmount: facts.formatAmount(lowerAmount),
+    })
   },
 
   /* P. The winner named and nothing else, because the name is the joke. */
-  (f) => {
-    const [a] = f.progs
+  (facts) => {
+    const [a] = facts.programs
     if (!a) return null
-    return f.c.p({ name: a.name, amt: f.amt(a.cost) })
+    return facts.copy.topProgram({ name: a.name, amount: facts.formatAmount(a.cost) })
   },
 
   /* Q. The one that leaves the reader something to do. */
-  (f) => {
-    const [a] = f.tools
+  (facts) => {
+    const [a] = facts.tools
     if (!a) return null
-    return f.c.q({ name: a.name, amt: f.amt(a.cost), scope: f.scope, masked: f.masked })
+    return facts.copy.inputOptimization({
+      name: a.name,
+      amount: facts.formatAmount(a.cost),
+      scope: facts.scope,
+      masked: facts.amountsHidden,
+    })
   },
 
   /* R. A question with a reply in mind. */
-  (f) => f.c.r(),
+  (facts) => facts.copy.replyPrompt(),
 ]
 
 /** A draft as the composer will receive it, trimmed to fit. */
@@ -727,20 +780,24 @@ function assemble(draft: Draft, home?: string | null): string {
 }
 
 /** Every caption this dataset can honestly carry, in a stable order. */
-export function postVariants(d: Dataset, pctOnly: boolean, home?: string | null): string[] {
-  const f = factsOf(d, pctOnly)
-  return VARIANTS.flatMap((v) => v(f) || []).map((draft) => assemble(draft, home))
+export function postVariants(
+  dataset: Dataset,
+  amountsHidden: boolean,
+  home?: string | null,
+): string[] {
+  const facts = factsOf(dataset, amountsHidden)
+  return VARIANTS.flatMap((v) => v(facts) || []).map((draft) => assemble(draft, home))
 }
 
 /** The caption that travels with the shared image, drawn at random from the ones this dataset
  *  supports. */
 export function postText(
-  d: Dataset,
-  pctOnly: boolean,
+  dataset: Dataset,
+  amountsHidden: boolean,
   home?: string | null,
   pick: number = Math.random(),
 ): string {
-  const all = postVariants(d, pctOnly, home)
+  const all = postVariants(dataset, amountsHidden, home)
   const i = Math.min(all.length - 1, Math.max(0, Math.floor(pick * all.length)))
   return all[i]
 }

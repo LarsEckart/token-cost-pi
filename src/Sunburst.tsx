@@ -4,7 +4,7 @@ import { memo, useMemo } from "react"
 import { useReport } from "./context.ts"
 import { isCode, labelOf, pageCopy } from "./copy.tsx"
 import { Figure, TextCross } from "./Motion.tsx"
-import { pctOf, sunburst, type SunBranch } from "./model.ts"
+import { percentageOf, sunburst, type SunBranch } from "./model.ts"
 import { disarmHover, hoverBind, setState, useHover } from "./store.ts"
 
 /* Ring geometry, in the viewBox's own units: the box is 200 across and centred on the origin, so
@@ -39,17 +39,17 @@ const Sector = memo(function Sector({
   at,
   hit,
   anyHover,
-  q,
+  query,
 }: {
   branch: SunBranch
   at: number
   hit: string | null
   anyHover: boolean
-  q: string
+  query: string
 }): React.JSX.Element {
-  const { pal, amt, drill } = useReport()
+  const { palette, formatAmount, drillInto } = useReport()
   const t = pageCopy()
-  const h = pal.hue(branch.group)
+  const h = palette.hue(branch.group)
   /* The sector's own sweep, which is the first arc it laid down: `sunburst` walks a branch from
      its root outward, so `arcs[0]` is the ring-0 wedge every other arc here sits under. */
   const root = branch.arcs[0]
@@ -95,7 +95,7 @@ const Sector = memo(function Sector({
           const on = hit === a.key || (!!hit && hit.startsWith(a.key + "›"))
           /* The query dims rather than filters: dropping arcs would leave a circle whose sweeps
              no longer read as shares of anything. */
-          const miss = !!q && !a.key.toLowerCase().includes(q)
+          const miss = !!query && !a.key.toLowerCase().includes(query)
           const dim = (anyHover && !on) || miss
           return (
             /* The wedge and its dashed edge travel together on the arrival -- see `.sunwedge` in
@@ -108,16 +108,16 @@ const Sector = memo(function Sector({
                 d={arcPath(a.a0, a.a1, r0, r1)}
                 fill={h}
                 opacity={dim ? 0.24 : on || carry ? 1 : 1 - a.ring * 0.14}
-                onClick={() => drill(branch.name)}
+                onClick={() => drillInto(branch.name)}
                 {...hoverBind({
                   key: a.key,
                   name: a.name,
                   cost: a.cost,
-                  under: a.under,
+                  parentName: a.parentName,
                   group: branch.group,
                 })}
               >
-                <title>{`${labelOf(t, a.name)} · ${amt(a.cost)}`}</title>
+                <title>{`${labelOf(t, a.name)} · ${formatAmount(a.cost)}`}</title>
               </path>
               {carry && !on && !dim ? (
                 <path
@@ -143,17 +143,17 @@ function Core({
   label: string
   kids: number
 }): React.JSX.Element {
-  const { state, focus, amt, d } = useReport()
+  const { state, focus, formatAmount, dataset } = useReport()
   const t = pageCopy()
   const h = useHover()
   const up = state.path.length > 0
-  const pct = pctOf(h?.cost ?? 0, rootCost)
+  const pct = percentageOf(h?.cost ?? 0, rootCost)
 
   /* What each line stands for, as an identifier rather than displayed text, so it stays stable. */
-  const kAt = h ? "h›" + (h.under ? h.under : h.group) : "r›" + focus.node.name
+  const kAt = h ? "h›" + (h.parentName ? h.parentName : h.group) : "r›" + focus.node.name
   const sAt = h ? "h›" + h.key : "r›" + focus.node.name
   /* The amount twice over: a number for the rolling digits, text for the words beside them. Once
-     the dollars are covered the readout is a share of the whole bill -- the same figure `amt()`
+     the dollars are covered the readout is a share of the whole bill -- the same figure `formatAmount()`
      writes -- and it rolls the same way rather than cutting to the next arc's. */
   const cost = h ? h.cost : rootCost
   const pctText = pct.toFixed(pct < 1 ? 2 : 1) + "%"
@@ -161,18 +161,20 @@ function Core({
   const inner = (
     <>
       <span className="k">
-        <TextCross token={kAt}>{h ? labelOf(t, h.under ? h.under : h.group) : label}</TextCross>
+        <TextCross token={kAt}>
+          {h ? labelOf(t, h.parentName ? h.parentName : h.group) : label}
+        </TextCross>
       </span>
       <Figure
         className="v"
-        value={state.pctOnly ? pctOf(cost, d.total) : cost}
-        text={amt(cost)}
-        share={state.pctOnly}
+        value={state.amountsHidden ? percentageOf(cost, dataset.total) : cost}
+        text={formatAmount(cost)}
+        share={state.amountsHidden}
       />
       <span className="s">
         <TextCross token={sAt}>
           {h ? (
-            <span data-code={isCode(t, h.name, h.under, h.group) ? 1 : 0}>
+            <span data-code={isCode(t, h.name, h.parentName, h.group) ? 1 : 0}>
               {labelOf(t, h.name)}
             </span>
           ) : (
@@ -230,7 +232,7 @@ const LegRow = memo(function LegRow({
   on: boolean
   dim: boolean
 }): React.JSX.Element {
-  const { amt, drill } = useReport()
+  const { formatAmount, drillInto } = useReport()
   const t = pageCopy()
   const kids = branch.arcs.filter((a) => a.ring === 1)
   const note = branch.folded
@@ -241,7 +243,7 @@ const LegRow = memo(function LegRow({
           ? " · " +
             kids
               .slice(0, 2)
-              .map((k) => `${labelOf(t, k.name)} ${amt(k.cost)}`)
+              .map((k) => `${labelOf(t, k.name)} ${formatAmount(k.cost)}`)
               .join(" · ")
           : "")
       : t.sun.leafNote
@@ -255,7 +257,7 @@ const LegRow = memo(function LegRow({
         key: branch.key,
         name: branch.name,
         cost: branch.cost,
-        under: null,
+        parentName: null,
         group: branch.group,
       })}
     >
@@ -264,32 +266,32 @@ const LegRow = memo(function LegRow({
         type="button"
         data-folded={branch.folded ? 1 : 0}
         data-code={isCode(t, branch.name, null, branch.group) ? 1 : 0}
-        onClick={() => drill(branch.name)}
+        onClick={() => drillInto(branch.name)}
       >
         {labelOf(t, branch.name)}
       </button>
       <span className="note">{note}</span>
-      <span className="val">{amt(branch.cost)}</span>
+      <span className="val">{formatAmount(branch.cost)}</span>
     </div>
   )
 })
 
 export function Sunburst(): React.JSX.Element {
-  const { focus, state, pal, amt } = useReport()
+  const { focus, state, palette, formatAmount } = useReport()
   const t = pageCopy()
   const hover = useHover()
-  const hk = hover?.key ?? null
-  const q = state.query.trim().toLowerCase()
+  const hoverKey = hover?.key ?? null
+  const query = state.query.trim().toLowerCase()
   const rootCost = focus.node.cost || 1
 
   /* Memoised for node identity, so a hover leaves the memoised sectors' props untouched. */
-  const branches = useMemo(() => sunburst(focus), [focus])
+  const hasBranches = useMemo(() => sunburst(focus), [focus])
 
-  /* "all" is the synthetic root the drill-down starts from, and it is said as "the bill" rather
+  /* "all" is the synthetic root the drillInto-down starts from, and it is said as "the bill" rather
      than by its own name -- which is the one place the tree's identifier would read as a label
      if it were printed. */
   const label = focus.node.name === "all" ? t.strip.theBill : labelOf(t, focus.node.name)
-  if (!branches.length) return <div className="sunempty">{t.sun.empty(label)}</div>
+  if (!hasBranches.length) return <div className="sunempty">{t.sun.empty(label)}</div>
 
   return (
     <div className="sun">
@@ -297,7 +299,7 @@ export function Sunburst(): React.JSX.Element {
         <svg
           viewBox="-100 -100 200 200"
           role="img"
-          aria-label={t.sun.aria(branches.length, amt(rootCost))}
+          aria-label={t.sun.aria(hasBranches.length, formatAmount(rootCost))}
         >
           {/* Sits under the arcs and catches everything they do not cover -- the margin
               outside the outer ring, the corners of the box -- so sliding off an arc into
@@ -305,33 +307,37 @@ export function Sunburst(): React.JSX.Element {
               highlight. `pointer-events` is spelled out because an unfilled shape is not
               hit-tested, and an arrival nothing can see is an arrival nobody reports. */}
           <rect x={-100} y={-100} width={200} height={200} fill="none" pointerEvents="all" />
-          {branches.map((b, i) => (
+          {hasBranches.map((b, i) => (
             <Sector
               key={b.name}
               branch={b}
               at={i}
-              q={q}
-              anyHover={!!hk}
-              hit={hk && (hk === b.key || hk.startsWith(b.key + "›")) ? hk : null}
+              query={query}
+              anyHover={!!hoverKey}
+              hit={
+                hoverKey && (hoverKey === b.key || hoverKey.startsWith(b.key + "›"))
+                  ? hoverKey
+                  : null
+              }
             />
           ))}
         </svg>
-        <Core rootCost={rootCost} label={label} kids={branches.length} />
+        <Core rootCost={rootCost} label={label} kids={hasBranches.length} />
       </div>
       <div className="sunlegend">
-        {branches.map((b) => {
-          const on = hk === b.key || (!!hk && hk.startsWith(b.key + "›"))
+        {hasBranches.map((b) => {
+          const on = hoverKey === b.key || (!!hoverKey && hoverKey.startsWith(b.key + "›"))
           return (
             <LegRow
               key={b.name}
               branch={b}
-              hue={pal.hue(b.group)}
+              hue={palette.hue(b.group)}
               on={on}
               dim={
-                (!!hk && !on) ||
-                (!!q &&
-                  !b.key.toLowerCase().includes(q) &&
-                  !b.arcs.some((a) => a.key.toLowerCase().includes(q)))
+                (!!hoverKey && !on) ||
+                (!!query &&
+                  !b.key.toLowerCase().includes(query) &&
+                  !b.arcs.some((a) => a.key.toLowerCase().includes(query)))
               }
             />
           )

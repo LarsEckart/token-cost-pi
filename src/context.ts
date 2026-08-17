@@ -1,57 +1,68 @@
-/* One context carrying everything every part of the report needs: the analysis, dataset, view
-   state, palette, focused subtree, and the formatters whose behaviour changes when amounts hide. */
+/* Shared report data and actions, derived once so each view reads the same state. */
 
 import { createContext, useCallback, useContext, useMemo } from "react"
 import type { Analysis, Dataset } from "./engine.ts"
-import { branches, focusOf, money, palette, type Focus, type Palette } from "./model.ts"
+import {
+  createPalette,
+  focusForPath,
+  hasBranches,
+  money,
+  type Focus,
+  type Palette,
+} from "./model.ts"
 import { disarmHover, setState, type ViewState } from "./store.ts"
 
-export interface ReportCtx {
-  data: Analysis
-  d: Dataset
+export interface ReportContextValue {
+  analysis: Analysis
+  dataset: Dataset
   state: ViewState
-  pal: Palette
-  /** The subtree the breadcrumb is pointing at. */
+  palette: Palette
+  /** The subtree selected by the breadcrumb. */
   focus: Focus
-  /** Dollars, or share of `base` (default: the whole bill) when amounts are hidden. */
-  amt(cost: number, base?: number): string
-  /** Requests, floored at 1 so per-request figures can never divide by zero. */
-  reqs: number
-  /** Drill one level down into `name`, if it has anything to show. */
-  drill(name: string): void
+  /** Format a cost as dollars or, when amounts are hidden, as a share of the supplied total. */
+  formatAmount(cost: number, total?: number): string
+  /** At least one, so per-request figures never divide by zero. */
+  requestCount: number
+  /** Open a child node when it has another level to show. */
+  drillInto(name: string): void
 }
 
-export const ReportContext = createContext<ReportCtx | null>(null)
+export const ReportContext = createContext<ReportContextValue | null>(null)
 
-export function useReport(): ReportCtx {
-  const ctx = useContext(ReportContext)
-  if (!ctx) throw new Error("useReport() outside a report")
-  return ctx
+export function useReport(): ReportContextValue {
+  const context = useContext(ReportContext)
+  if (!context) throw new Error("useReport() outside a report")
+  return context
 }
 
-/** Everything derived from an analysis, in one object whose identity survives a re-render. */
-export function useReportCtx(data: Analysis | null, state: ViewState): ReportCtx | null {
-  const d = data?.dataset ?? null
-  const reqs = d?.requests || 1
+/** Derive the stable data and actions that every report view shares. */
+export function useReportContext(
+  analysis: Analysis | null,
+  state: ViewState,
+): ReportContextValue | null {
+  const dataset = analysis?.dataset ?? null
+  const requestCount = dataset?.requests || 1
+  const focus = useMemo(
+    () => (dataset ? focusForPath(dataset, state.path) : null),
+    [dataset, state.path],
+  )
+  const palette = useMemo(() => (dataset ? createPalette(dataset) : null), [dataset])
+  const totalCost = dataset?.total ?? 0
 
-  const focus = useMemo(() => (d ? focusOf(d, state.path) : null), [d, state.path])
-  const pal = useMemo(() => (d ? palette(d) : null), [d])
-
-  const total = d?.total ?? 0
-  const amt = useCallback<ReportCtx["amt"]>(
-    (cost, base) => {
-      if (!state.pctOnly) return money(cost)
-      const denom = base || total
-      const r = denom > 0 ? (cost / denom) * 100 : 0
-      return (r < 1 ? r.toFixed(2) : r.toFixed(1)) + "%"
+  const formatAmount = useCallback<ReportContextValue["formatAmount"]>(
+    (cost, total) => {
+      if (!state.amountsHidden) return money(cost)
+      const denominator = total || totalCost
+      const percentage = denominator > 0 ? (cost / denominator) * 100 : 0
+      return (percentage < 1 ? percentage.toFixed(2) : percentage.toFixed(1)) + "%"
     },
-    [state.pctOnly, total],
+    [state.amountsHidden, totalCost],
   )
 
-  const drill = useCallback(
+  const drillInto = useCallback(
     (name: string) => {
-      const it = (focus?.node.items || []).find((x) => x.name === name)
-      if (!branches(it)) return // nothing to show one level down
+      const child = (focus?.node.items || []).find((item) => item.name === name)
+      if (!hasBranches(child)) return
       disarmHover()
       if (!focus?.groupName) setState({ path: [name] })
       else if (state.path.length === 1) setState({ path: [focus.groupName, name] })
@@ -60,7 +71,10 @@ export function useReportCtx(data: Analysis | null, state: ViewState): ReportCtx
   )
 
   return useMemo(
-    () => (data && d && focus && pal ? { data, d, state, pal, focus, reqs, amt, drill } : null),
-    [data, d, state, pal, focus, reqs, amt, drill],
+    () =>
+      analysis && dataset && focus && palette
+        ? { analysis, dataset, state, palette, focus, requestCount, formatAmount, drillInto }
+        : null,
+    [analysis, dataset, state, palette, focus, requestCount, formatAmount, drillInto],
   )
 }

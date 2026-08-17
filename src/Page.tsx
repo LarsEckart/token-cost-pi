@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef } from "react"
 import type { Analysis } from "./engine.ts"
-import { ReportContext, useReportCtx } from "./context.ts"
+import { ReportContext, useReportContext } from "./context.ts"
 import { pageCopy, type Word } from "./copy.tsx"
 import { money } from "./model.ts"
 import {
@@ -146,7 +146,7 @@ export function Page({
 }): React.JSX.Element {
   const state = useViewState()
   const t = pageCopy()
-  const ctx = useReportCtx(data, state)
+  const ctx = useReportContext(data, state)
   const narrow = useNarrow()
 
   /* One string, so the two faces cannot mount different panels by disagreeing about which one is
@@ -154,7 +154,7 @@ export function Page({
   const face = ctx ? "report" : "empty"
   useUrlSync(state, data, !!ctx, leaving)
 
-  const billed = ctx ? t.card.billed(state.pctOnly) : t.card.nothingYet
+  const billed = ctx ? t.card.billed(state.amountsHidden) : t.card.nothingYet
   /* What the empty card's figure counts from, and what it counts through: the walk writes its
      running total into this box as it reads, so the slot holds $0.00 before a folder is picked
      and then climbs towards the bill from the first transcript to the last. */
@@ -163,9 +163,9 @@ export function Page({
 
   /* The figure twice over: as a number for the rolling digits, and as text for the one state
      that is not one. */
-  const total = ctx ? (state.pctOnly ? null : ctx.d.total) : counted
-  const figureText = money(ctx ? ctx.d.total : counted)
-  const totalText = ctx && state.pctOnly ? "****" : figureText
+  const total = ctx ? (state.amountsHidden ? null : ctx.dataset.total) : counted
+  const figureText = money(ctx ? ctx.dataset.total : counted)
+  const totalText = ctx && state.amountsHidden ? "****" : figureText
 
   return (
     <ReportContext.Provider value={ctx}>
@@ -190,7 +190,7 @@ export function Page({
                   see `.chead` in the stylesheet. */}
               <div className="eyebrow">
                 {t.card.eyebrow}
-                <TextSwap token={face}>{ctx ? " · " + scopeOf(t, ctx.d) : ""}</TextSwap>
+                <TextSwap token={face}>{ctx ? " · " + scopeOf(t, ctx.dataset) : ""}</TextSwap>
               </div>
               {/* One sentence in two tenses, set word by word so the words can be told apart.
                   In English "Where", "your" and "money" are the same three words on both faces,
@@ -223,13 +223,13 @@ export function Page({
                   /* SAFETY: React's CSSProperties omits custom CSS variables used by the stylesheet. */
                   { "--fig": figureText.length } as React.CSSProperties
                 }
-                data-hidden={state.pctOnly && ctx ? 1 : 0}
+                data-hidden={state.amountsHidden && ctx ? 1 : 0}
                 data-empty={ctx ? 0 : 1}
               >
                 <Figure
                   value={total}
                   text={totalText}
-                  className={state.pctOnly && ctx ? "mask" : undefined}
+                  className={state.amountsHidden && ctx ? "mask" : undefined}
                 />
               </div>
             </div>

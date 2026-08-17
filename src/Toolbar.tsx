@@ -68,7 +68,7 @@ function MaskToggle({ on }: { on: boolean }): React.JSX.Element {
         aria-pressed={on}
         aria-label={t.mask.name}
         aria-describedby={tip}
-        onClick={() => transition(() => setState({ pctOnly: !on }), { "data-mask": "" })}
+        onClick={() => transition(() => setState({ amountsHidden: !on }), { "data-mask": "" })}
       >
         {/* The dollar sign sits beside the eye that covers it. */}
         <span className="eyeamt">$</span>
@@ -202,7 +202,7 @@ export function Toolbar({
       {report ? (
         <span className="maskslot t-grow" data-i={first - 3}>
           <span className="seg t-tt-host">
-            <MaskToggle on={state.pctOnly} />
+            <MaskToggle on={state.amountsHidden} />
           </span>
         </span>
       ) : null}

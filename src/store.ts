@@ -2,14 +2,14 @@
 
 import { useSyncExternalStore } from "react"
 import type { Analysis } from "./engine.ts"
-import { pathOf, slug } from "./model.ts"
+import { pathFromSlugs, slug } from "./model.ts"
 
 /** What the pointer (or keyboard focus) is on. */
 export interface HoverTarget {
   key: string
   name: string
   cost: number
-  under: string | null
+  parentName: string | null
   group: string
 }
 
@@ -25,7 +25,7 @@ export interface ViewState {
   chart: "mosaic" | "sun"
   view: "panels" | "table"
   /** Amounts hidden for screen-sharing: shares of the bill instead of dollars. */
-  pctOnly: boolean
+  amountsHidden: boolean
   theme: ThemeChoice
 }
 
@@ -62,7 +62,7 @@ const INITIAL: ViewState = {
   query: "",
   chart: WIDE ? "mosaic" : "sun",
   view: "panels",
-  pctOnly: false,
+  amountsHidden: false,
   theme: "system",
 }
 
@@ -97,11 +97,11 @@ const hoverListeners = new Set<() => void>()
 
 export const getHover = (): HoverTarget | null => hover
 
-export function setHover(t: HoverTarget | null): void {
+export function setHover(target: HoverTarget | null): void {
   /* Enter and focus both fire for the same block, so the echo is dropped. */
-  if (hover === t || (hover?.key === t?.key && hover?.cost === t?.cost)) return
-  hover = t
-  hoverListeners.forEach((fn) => fn())
+  if (hover === target || (hover?.key === target?.key && hover?.cost === target?.cost)) return
+  hover = target
+  hoverListeners.forEach((listener) => listener())
 }
 
 function subscribeHover(fn: () => void): () => void {
@@ -143,34 +143,34 @@ interface HoverClearBindings {
   onBlur: (e: React.FocusEvent<HTMLElement>) => void
 }
 
-export function hoverBind(t: HoverTarget): HoverBindings {
-  const on = (): void => setHover(t)
-  const moved = (): void => {
+export function hoverBind(target: HoverTarget): HoverBindings {
+  const setTarget = (): void => setHover(target)
+  const setTargetAfterMove = (): void => {
     armed = true
-    setHover(t)
+    setHover(target)
   }
   return {
-    onMouseMove: moved,
+    onMouseMove: setTargetAfterMove,
     onMouseEnter: () => {
-      if (armed) setHover(t)
+      if (armed) setHover(target)
     },
     /* Focus is nobody's accident: it arrives by tab or by click, both of which are the reader
        saying which thing they mean. */
-    onFocus: on,
+    onFocus: setTarget,
     "data-hoversrc": "",
   }
 }
 
 /** The other half, spread once on the shell. */
 export const hoverClear: HoverClearBindings = {
-  onMouseOver: (e) => {
+  onMouseOver: (event) => {
     // SAFETY: React mouse events always expose an EventTarget that is an Element in this handler.
-    if (!(e.target as Element).closest("[data-hoversrc]")) setHover(null)
+    if (!(event.target as Element).closest("[data-hoversrc]")) setHover(null)
   },
   onMouseLeave: () => setHover(null),
-  onBlur: (e) => {
+  onBlur: (event) => {
     // SAFETY: A related target for this element handler is either an Element or null.
-    if (!(e.relatedTarget as Element | null)?.closest("[data-hoversrc]")) setHover(null)
+    if (!(event.relatedTarget as Element | null)?.closest("[data-hoversrc]")) setHover(null)
   },
 }
 
@@ -223,40 +223,40 @@ export function readPath(pathname: string): AddressPath {
  *  and only the tree knows which name a slug stood for. */
 export function applyUrl(data: Analysis | null): void {
   const hash = readHash(location.hash)
-  const d = data?.dataset
+  const dataset = data?.dataset
   setState({
     ...INITIAL,
     theme: state.theme,
     open: state.open,
-    path: d ? pathOf(d, readPath(location.pathname).slugs) : [],
+    path: dataset ? pathFromSlugs(dataset, readPath(location.pathname).slugs) : [],
     ...hash,
   })
 }
 
 export function readHash(hash: string): Partial<ViewState> {
-  const h = (hash || "").replace(/^#/, "")
-  if (!h) return {}
-  const p: Record<string, string> = {}
-  h.split("&").forEach((kv) => {
-    const [a, b] = kv.split("=")
-    if (a) p[a] = decodeURIComponent(b || "")
+  const rawHash = (hash || "").replace(/^#/, "")
+  if (!rawHash) return {}
+  const parameters: Record<string, string> = {}
+  rawHash.split("&").forEach((pair) => {
+    const [key, value] = pair.split("=")
+    if (key) parameters[key] = decodeURIComponent(value || "")
   })
-  const out: Partial<ViewState> = {}
-  if (p.c === "sun" || p.c === "mosaic") out.chart = p.c
-  if (p.v === "table" || p.v === "panels") out.view = p.v
-  if (p.q) out.query = p.q
-  if (p.u === "pct") out.pctOnly = true
-  if (p.t === "dark" || p.t === "light") out.theme = p.t
-  return out
+  const statePatch: Partial<ViewState> = {}
+  if (parameters.c === "sun" || parameters.c === "mosaic") statePatch.chart = parameters.c
+  if (parameters.v === "table" || parameters.v === "panels") statePatch.view = parameters.v
+  if (parameters.q) statePatch.query = parameters.q
+  if (parameters.u === "pct") statePatch.amountsHidden = true
+  if (parameters.t === "dark" || parameters.t === "light") statePatch.theme = parameters.t
+  return statePatch
 }
 
-export function hashFor(s: ViewState): string {
+export function hashFor(viewState: ViewState): string {
   const parts: string[] = []
   /* On a phone the sunburst is where the page starts, so only the mosaic needs a key. */
-  if (s.chart !== INITIAL.chart) parts.push("c=" + s.chart)
-  if (s.view !== "panels") parts.push("v=" + s.view)
-  if (s.query) parts.push("q=" + encodeURIComponent(s.query))
-  if (s.pctOnly) parts.push("u=pct")
-  if (s.theme !== "system") parts.push("t=" + s.theme)
+  if (viewState.chart !== INITIAL.chart) parts.push("c=" + viewState.chart)
+  if (viewState.view !== "panels") parts.push("v=" + viewState.view)
+  if (viewState.query) parts.push("q=" + encodeURIComponent(viewState.query))
+  if (viewState.amountsHidden) parts.push("u=pct")
+  if (viewState.theme !== "system") parts.push("t=" + viewState.theme)
   return parts.length ? "#" + parts.join("&") : ""
 }

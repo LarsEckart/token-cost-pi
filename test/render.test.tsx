@@ -9,14 +9,14 @@ describe("Pi report state", () => {
       query: "bash",
       chart: "sun" as const,
       view: "table" as const,
-      pctOnly: true,
+      amountsHidden: true,
       theme: "dark" as const,
     }
     expect(readHash(hashFor(state))).toMatchObject({
       query: "bash",
       chart: "sun",
       view: "table",
-      pctOnly: true,
+      amountsHidden: true,
       theme: "dark",
     })
   })

@@ -19,19 +19,19 @@ export type GroupId =
 export interface GroupDef {
   id: GroupId
   name: string
-  short: string
+  shortName: string
 }
 
 export const GROUPS: GroupDef[] = [
-  { id: "shell", name: "Shell commands", short: "Shell" },
-  { id: "ingest", name: "Tools · content read in", short: "Read in" },
-  { id: "emit", name: "Tools · content written out", short: "Written out" },
-  { id: "twoway", name: "Tools · two-way", short: "Two-way" },
-  { id: "output", name: "Model output", short: "Output" },
-  { id: "preamble", name: "Pi context & tool schemas", short: "Pi context" },
-  { id: "harness", name: "Compaction & extensions", short: "Compaction" },
-  { id: "media", name: "Images & attachments", short: "Media" },
-  { id: "typed", name: "My typing", short: "My typing" },
+  { id: "shell", name: "Shell commands", shortName: "Shell" },
+  { id: "ingest", name: "Tools · content read in", shortName: "Read in" },
+  { id: "emit", name: "Tools · content written out", shortName: "Written out" },
+  { id: "twoway", name: "Tools · two-way", shortName: "Two-way" },
+  { id: "output", name: "Model output", shortName: "Output" },
+  { id: "preamble", name: "Pi context & tool schemas", shortName: "Pi context" },
+  { id: "harness", name: "Compaction & extensions", shortName: "Compaction" },
+  { id: "media", name: "Images & attachments", shortName: "Media" },
+  { id: "typed", name: "My typing", shortName: "My typing" },
 ]
 
 export interface TreeChild {
@@ -48,19 +48,19 @@ export interface TreeItem {
 export interface TreeGroup {
   id: GroupId
   name: string
-  short: string
+  shortName: string
   cost: number
   items: TreeItem[]
 }
 
 export interface Insights {
-  fixed: number
-  thinking: number
-  proseGen: number
-  proseCarry: number
-  ingest: number
-  emit: number
-  typed: number
+  fixedOverhead: number
+  reasoning: number
+  generatedProse: number
+  carriedProse: number
+  toolInput: number
+  toolOutput: number
+  typedMessages: number
 }
 
 export interface Dataset {
@@ -705,7 +705,7 @@ function makeDataset(scan: Scan): Dataset {
     return {
       id: def.id,
       name: def.name,
-      short: def.short,
+      shortName: def.shortName,
       cost: sum(items.map((item) => item.cost)),
       items,
     }
@@ -732,13 +732,13 @@ function makeDataset(scan: Scan): Dataset {
         : null,
     groups,
     insights: {
-      fixed: groupCost("preamble"),
-      thinking: outputCost("thinking"),
-      proseGen: outputCost("assistant prose (generated)"),
-      proseCarry: outputCost("prose-carried"),
-      ingest: groupCost("ingest") + groupCost("shell"),
-      emit: groupCost("emit"),
-      typed: groupCost("typed"),
+      fixedOverhead: groupCost("preamble"),
+      reasoning: outputCost("thinking"),
+      generatedProse: outputCost("assistant prose (generated)"),
+      carriedProse: outputCost("prose-carried"),
+      toolInput: groupCost("ingest") + groupCost("shell"),
+      toolOutput: groupCost("emit"),
+      typedMessages: groupCost("typed"),
     },
   }
 }

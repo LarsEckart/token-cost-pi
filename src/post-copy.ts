@@ -6,45 +6,54 @@ import type { Draft } from "./model.ts"
 /** Captions for the shared image. */
 export interface PostCopy {
   /** The span a caption is about: days where the transcripts carry dates, sessions otherwise. */
-  scopeDays: (n: number) => string
-  scopeSessions: (n: number, formatted: string) => string
+  scopeDays: (days: number) => string
+  scopeSessions: (sessionCount: number, formatted: string) => string
   /** "$12.30 of $98.00", and the covered form that names no total. */
-  outOf: (amt: string, total: string) => string
+  outOf: (amount: string, total: string) => string
   outOfMasked: (share: string) => string
   /** How a group is said out loud. */
   said: Partial<Record<GroupId, string>>
 
-  a: (p: {
+  toolQuestion: (params: {
     name: string
-    amt: string
+    amount: string
     outOf: string
     scope: string
     masked: boolean
     second: string | null
-    secondAmt: string
+    secondAmount: string
   }) => Draft
-  b: (p: {
+  commandCosts: (params: {
     name: string
-    amt: string
+    amount: string
     scope: string
     masked: boolean
-    rest: Array<{ name: string; amt: string }>
+    rest: Array<{ name: string; amount: string }>
   }) => Draft
-  c: (p: {
+  agentSummary: (params: {
     total: string | null
     scope: string
     requests: string
     typedShare: string | null
   }) => Draft
-  d: (p: { outOf: string }) => Draft
-  e: (p: { times: string; gen: string | null; carry: string }) => Draft
-  f: (p: { total: string | null; scope: string; said: string; share: string }) => Draft
+  typedShare: (params: { outOf: string }) => Draft
+  proseCarryRatio: (params: {
+    times: string
+    generatedAmount: string | null
+    carriedAmount: string
+  }) => Draft
+  billReceipt: (params: {
+    total: string | null
+    scope: string
+    said: string
+    share: string
+  }) => Draft
 
   /* The styles below carry two or three phrasings each, drawn from the same flat list as the
      six above: a style that survives its guard on most datasets would otherwise arrive in the
      same words every time it came up. */
 
-  g: (p: {
+  billFigures: (params: {
     total: string | null
     scope: string
     requests: string
@@ -52,23 +61,43 @@ export interface PostCopy {
     said: string
     share: string
   }) => Draft[]
-  h: (p: { perDay: string; perRequest: string | null; days: string; requests: string }) => Draft[]
-  i: (p: { times: string; scope: string; requests: string }) => Draft[]
-  j: (p: { amt: string; share: string | null; scope: string; masked: boolean }) => Draft[]
-  k: (p: { amt: string; requests: string; scope: string }) => Draft[]
-  l: (p: { amt: string; scope: string; masked: boolean }) => Draft[]
-  m: () => Draft[]
-  n: (p: { scope: string; rows: Array<{ name: string; amt: string }> }) => Draft[]
-  o: (p: { wroteMore: boolean; hi: string; lo: string }) => Draft[]
-  p: (p: { name: string; amt: string }) => Draft[]
-  q: (p: { name: string; amt: string; scope: string; masked: boolean }) => Draft[]
-  r: () => Draft[]
+  dailyCost: (params: {
+    perDay: string
+    perRequest: string | null
+    days: string
+    requests: string
+  }) => Draft[]
+  typedCostRatio: (params: { times: string; scope: string; requests: string }) => Draft[]
+  reasoningCost: (params: {
+    amount: string
+    share: string | null
+    scope: string
+    masked: boolean
+  }) => Draft[]
+  fixedCost: (params: { amount: string; requests: string; scope: string }) => Draft[]
+  carriedProseCost: (params: { amount: string; scope: string; masked: boolean }) => Draft[]
+  contextThesis: () => Draft[]
+  billLines: (params: { scope: string; rows: Array<{ name: string; amount: string }> }) => Draft[]
+  outputVsInput: (params: {
+    wroteMore: boolean
+    higherAmount: string
+    lowerAmount: string
+  }) => Draft[]
+  topProgram: (params: { name: string; amount: string }) => Draft[]
+  inputOptimization: (params: {
+    name: string
+    amount: string
+    scope: string
+    masked: boolean
+  }) => Draft[]
+  replyPrompt: () => Draft[]
 }
 
 const EN: PostCopy = {
-  scopeDays: (n) => `${n} day${n === 1 ? "" : "s"}`,
-  scopeSessions: (n, f) => `${f} session${n === 1 ? "" : "s"}`,
-  outOf: (amt, total) => `${amt} of ${total}`,
+  scopeDays: (days) => `${days} day${days === 1 ? "" : "s"}`,
+  scopeSessions: (sessionCount, formatted) =>
+    `${formatted} session${sessionCount === 1 ? "" : "s"}`,
+  outOf: (amount, total) => `${amount} of ${total}`,
   outOfMasked: (share) => `${share} of it`,
   said: {
     shell: "shell commands",
@@ -81,178 +110,180 @@ const EN: PostCopy = {
     media: "images and attachments",
     typed: "the part I actually typed",
   },
-  a: (p) => {
-    const mine = p.masked
-      ? `Mine's ${p.name}, at ${p.amt} of the bill.`
-      : `Mine's ${p.name}, at ${p.outOf} over ${p.scope}.`
+  toolQuestion: (params) => {
+    const mine = params.masked
+      ? `Mine's ${params.name}, at ${params.amount} of the bill.`
+      : `Mine's ${params.name}, at ${params.outOf} over ${params.scope}.`
     return {
       lines: [
         "What's the most expensive tool on your Pi bill?",
-        p.second ? `${mine} Second was ${p.second}, at ${p.secondAmt}.` : mine,
+        params.second ? `${mine} Second was ${params.second}, at ${params.secondAmount}.` : mine,
       ],
       cta: "Find yours",
     }
   },
-  b: (p) => ({
+  commandCosts: (params) => ({
     lines: [
-      `Guess what ${p.name} costs you in Pi.`,
-      (p.masked ? `Mine was ${p.amt} of my bill. ` : `Mine was ${p.amt} over ${p.scope}. `) +
-        p.rest.map((n) => `${n.name} was ${n.amt}.`).join(" "),
+      `Guess what ${params.name} costs you in Pi.`,
+      (params.masked
+        ? `Mine was ${params.amount} of my bill. `
+        : `Mine was ${params.amount} over ${params.scope}. `) +
+        params.rest.map((n) => `${n.name} was ${n.amount}.`).join(" "),
       "Every command's output sits in your context and gets re-billed on every turn after it.",
     ],
     cta: "Yours",
   }),
-  c: (p) => ({
+  agentSummary: (params) => ({
     lines: [
       "What's your AI agent actually costing you?",
-      `Mine: ${p.total ? `${p.total} over ` : ""}${p.scope} and ${p.requests} requests.` +
-        (p.typedShare ? ` I typed ${p.typedShare} of it.` : ""),
+      `Mine: ${params.total ? `${params.total} over ` : ""}${params.scope} and ${params.requests} requests.` +
+        (params.typedShare ? ` I typed ${params.typedShare} of it.` : ""),
     ],
     cta: "Itemise yours",
   }),
-  d: (p) => ({
+  typedShare: (params) => ({
     lines: [
       "Quick — what's the biggest line on your Pi bill?",
-      `It isn't what you type. That was ${p.outOf}.`,
+      `It isn't what you type. That was ${params.outOf}.`,
       "The rest is rent on context you never see.",
     ],
     cta: "See yours",
   }),
-  e: (p) => ({
+  proseCarryRatio: (params) => ({
     lines: [
       "Which costs more in Pi: what the model writes, or what it re-reads?",
-      p.gen
-        ? `Mine: ${p.gen} to write. ${p.carry} to re-read the same prose on later turns. ${p.times}.`
-        : `Mine: re-reading its own prose cost ${p.times} what writing it did.`,
+      params.generatedAmount
+        ? `Mine: ${params.generatedAmount} to write. ${params.carriedAmount} to re-read the same prose on later turns. ${params.times}.`
+        : `Mine: re-reading its own prose cost ${params.times} what writing it did.`,
     ],
     cta: "Check yours",
   }),
-  f: (p) => ({
+  billReceipt: (params) => ({
     lines: [
-      p.total
-        ? `${p.total} of Pi over ${p.scope}, itemised.`
-        : `Itemised ${p.scope} of my Pi bill.`,
-      `Biggest line: ${p.said}, ${p.share} of it.`,
+      params.total
+        ? `${params.total} of Pi over ${params.scope}, itemised.`
+        : `Itemised ${params.scope} of my Pi bill.`,
+      `Biggest line: ${params.said}, ${params.share} of it.`,
       "You don't pay for what the model writes — you pay rent on your context.",
     ],
     cta: "Show me yours",
   }),
 
-  g: (p) => [
+  billFigures: (params) => [
     {
       lines: [
-        p.total ? `${p.total} — Pi, ${p.scope}.` : `Pi, ${p.scope}.`,
-        `${p.requests} requests${p.each ? `, ${p.each} each` : ""}. Biggest line: ${p.said}, ${p.share}.`,
+        params.total ? `${params.total} — Pi, ${params.scope}.` : `Pi, ${params.scope}.`,
+        `${params.requests} requests${params.each ? `, ${params.each} each` : ""}. Biggest line: ${params.said}, ${params.share}.`,
       ],
       cta: "Yours",
     },
     {
       lines: [
-        `${p.scope}. ${p.requests} requests.${p.total ? ` ${p.total}.` : ""}`,
-        `${p.share} of it went on ${p.said}.`,
+        `${params.scope}. ${params.requests} requests.${params.total ? ` ${params.total}.` : ""}`,
+        `${params.share} of it went on ${params.said}.`,
       ],
       cta: "Itemise yours",
     },
     {
       lines: [
-        `Pi${p.total ? `, ${p.total}` : ""}, ${p.scope}.`,
-        `No tips, no thread. Just the receipt: ${p.said}, ${p.share} of the bill.`,
+        `Pi${params.total ? `, ${params.total}` : ""}, ${params.scope}.`,
+        `No tips, no thread. Just the receipt: ${params.said}, ${params.share} of the bill.`,
       ],
       cta: "Pull yours",
     },
   ],
 
-  h: (p) => [
+  dailyCost: (params) => [
     {
       lines: [
-        `My Pi habit runs ${p.perDay} a day.`,
-        `${p.days} days, ${p.requests} requests${p.perRequest ? `, ${p.perRequest} a request` : ""}. I thought I was buying answers. I was renting context.`,
+        `My Pi habit runs ${params.perDay} a day.`,
+        `${params.days} days, ${params.requests} requests${params.perRequest ? `, ${params.perRequest} a request` : ""}. I thought I was buying answers. I was renting context.`,
       ],
       cta: "Price yours",
     },
     {
       lines: [
-        p.perRequest
-          ? `Every time I hit enter in Pi it costs ${p.perRequest}.`
-          : `Pi is a ${p.perDay}-a-day habit.`,
-        `${p.requests} requests over ${p.days} days, ${p.perDay} a day — and most of it isn't the answer.`,
+        params.perRequest
+          ? `Every time I hit enter in Pi it costs ${params.perRequest}.`
+          : `Pi is a ${params.perDay}-a-day habit.`,
+        `${params.requests} requests over ${params.days} days, ${params.perDay} a day — and most of it isn't the answer.`,
       ],
       cta: "Work out yours",
     },
   ],
 
-  i: (p) => [
+  typedCostRatio: (params) => [
     {
       lines: [
-        `Typing is the cheapest thing I do in Pi. The context around it costs ${p.times} more.`,
-        `${p.scope}, ${p.requests} requests.`,
+        `Typing is the cheapest thing I do in Pi. The context around it costs ${params.times} more.`,
+        `${params.scope}, ${params.requests} requests.`,
       ],
       cta: "Check yours",
     },
     {
       lines: [
-        `For every dollar of what I actually typed into Pi, the context around it cost ${p.times} that.`,
+        `For every dollar of what I actually typed into Pi, the context around it cost ${params.times} that.`,
         "You aren't paying for your prompt. You're paying rent on everything it drags in behind it.",
       ],
       cta: "Do the maths on yours",
     },
   ],
 
-  j: (p) => [
+  reasoningCost: (params) => [
     {
       lines: [
-        p.masked
-          ? `${p.amt} of my Pi bill was thinking I never read.`
-          : `I paid ${p.amt} for thinking I never read.`,
-        `Reasoning bills like any other output${p.share ? `, and mine came to ${p.share} of ${p.scope}` : ` — that over ${p.scope}`}.`,
+        params.masked
+          ? `${params.amount} of my Pi bill was thinking I never read.`
+          : `I paid ${params.amount} for thinking I never read.`,
+        `Reasoning bills like any other output${params.share ? `, and mine came to ${params.share} of ${params.scope}` : ` — that over ${params.scope}`}.`,
       ],
       cta: "Check yours",
     },
     {
       lines: [
         "The model thinks before it answers, and you buy the thinking too.",
-        `Mine was ${p.amt} over ${p.scope}. Not the answer — the deliberation in front of it.`,
+        `Mine was ${params.amount} over ${params.scope}. Not the answer — the deliberation in front of it.`,
       ],
       cta: "See yours",
     },
   ],
 
-  k: (p) => [
+  fixedCost: (params) => [
     {
       lines: [
         "Every Pi request has a price before you type a character.",
-        `System prompt and tool schemas, sent again ${p.requests} times: ${p.amt}. I never saw a token of it.`,
+        `System prompt and tool schemas, sent again ${params.requests} times: ${params.amount}. I never saw a token of it.`,
       ],
       cta: "Price yours",
     },
     {
       lines: [
-        `${p.amt} of my Pi bill was spent before I said anything.`,
-        `That's the system prompt and the tool schemas, shipped again on every one of ${p.requests} requests.`,
+        `${params.amount} of my Pi bill was spent before I said anything.`,
+        `That's the system prompt and the tool schemas, shipped again on every one of ${params.requests} requests.`,
       ],
       cta: "Find yours",
     },
   ],
 
-  l: (p) => [
+  carriedProseCost: (params) => [
     {
       lines: [
-        p.masked
-          ? `${p.amt} of my Pi bill was the model re-reading its own thoughts.`
-          : `Today I learned I paid ${p.amt} to have a model re-read its own thoughts.`,
+        params.masked
+          ? `${params.amount} of my Pi bill was the model re-reading its own thoughts.`
+          : `Today I learned I paid ${params.amount} to have a model re-read its own thoughts.`,
       ],
       cta: "Your turn",
     },
     {
       lines: [
-        `${p.amt} of ${p.scope} of Pi went on the model reading back what it had already written.`,
+        `${params.amount} of ${params.scope} of Pi went on the model reading back what it had already written.`,
         "Nobody sends you an invoice for that. The transcript does.",
       ],
       cta: "See yours",
     },
   ],
 
-  m: () => [
+  contextThesis: () => [
     {
       lines: [
         "The most expensive line on my Pi bill isn't the model's answers.",
@@ -273,79 +304,82 @@ const EN: PostCopy = {
     },
   ],
 
-  n: (p) => [
+  billLines: (params) => [
     {
-      lines: [`${p.scope} of Pi, itemised.`, p.rows.map((r) => `${r.name} — ${r.amt}`).join("\n")],
+      lines: [
+        `${params.scope} of Pi, itemised.`,
+        params.rows.map((r) => `${r.name} — ${r.amount}`).join("\n"),
+      ],
       cta: "Itemise yours",
     },
     {
       lines: [
         "My Pi bill, biggest line first:",
-        p.rows.map((r) => `${r.amt} — ${r.name}`).join("\n"),
-        `That's ${p.scope}.`,
+        params.rows.map((r) => `${r.amount} — ${r.name}`).join("\n"),
+        `That's ${params.scope}.`,
       ],
       cta: "Yours",
     },
   ],
 
-  o: (p) => [
+  outputVsInput: (params) => [
     {
       lines: [
         "Which is bigger on your Pi bill: everything the model wrote, or everything your tools read in?",
-        p.wroteMore
-          ? `I'd have said the second. It was the first, ${p.hi} to ${p.lo}.`
-          : `I'd have said the first. It was the second, ${p.hi} to ${p.lo}.`,
+        params.wroteMore
+          ? `I'd have said the second. It was the first, ${params.higherAmount} to ${params.lowerAmount}.`
+          : `I'd have said the first. It was the second, ${params.higherAmount} to ${params.lowerAmount}.`,
       ],
       cta: "Settle yours",
     },
     {
       lines: [
-        p.wroteMore
-          ? `On my Pi bill, what the model wrote (${p.hi}) beat what my tools read in (${p.lo}).`
-          : `On my Pi bill, what my tools read in (${p.hi}) beat what the model wrote (${p.lo}).`,
+        params.wroteMore
+          ? `On my Pi bill, what the model wrote (${params.higherAmount}) beat what my tools read in (${params.lowerAmount}).`
+          : `On my Pi bill, what my tools read in (${params.higherAmount}) beat what the model wrote (${params.lowerAmount}).`,
         "One of those I asked for. The other just turned up.",
       ],
       cta: "Compare yours",
     },
   ],
 
-  p: (p) => [
+  topProgram: (params) => [
     {
       lines: [
-        `The most expensive program on my Pi bill is ${p.name}.`,
+        `The most expensive program on my Pi bill is ${params.name}.`,
         "Not the model. The program.",
       ],
       cta: "Find yours",
     },
     {
       lines: [
-        `${p.name} cost me ${p.amt} of Pi.`,
+        `${params.name} cost me ${params.amount} of Pi.`,
         "It doesn't think and it doesn't answer. It just puts things in the context that get billed again every turn after.",
       ],
       cta: "See yours",
     },
   ],
 
-  q: (p) => [
+  inputOptimization: (params) => [
     {
       lines: [
         "The cheapest optimisation in Pi isn't a better prompt.",
-        `It's keeping a huge tool output out of the context at all — you pay for it again on every turn after. ${p.name} alone: ${p.amt}${p.masked ? "" : ` over ${p.scope}`}.`,
+        `It's keeping a huge tool output out of the context at all — you pay for it again on every turn after. ${params.name} alone: ${params.amount}${params.masked ? "" : ` over ${params.scope}`}.`,
       ],
       cta: "Check yours",
     },
     {
       lines: [
-        p.masked
-          ? `${p.name} was ${p.amt} of my Pi bill.`
-          : `${p.name} was ${p.amt} of my Pi bill over ${p.scope}.`,
+        params.masked
+          ? `${params.name} was ${params.amount} of my Pi bill.`
+          : `${params.name} was ${params.amount} of my Pi bill over ${params.scope}.`,
         "Not because I called it a lot. Because what it returned sat in the context and got re-billed every turn after.",
       ],
       cta: "Check yours",
     },
   ],
 
-  r: () => [
+  replyPrompt: () => [
     {
       lines: ["Guess the biggest line on my Pi bill. One try.", "It isn't the model writing code."],
       cta: "Then go and find yours",

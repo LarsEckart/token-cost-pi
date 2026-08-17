@@ -3,21 +3,28 @@
 import { memo } from "react"
 import { useReport } from "./context.ts"
 import { isCode, nodeName, pageCopy } from "./copy.tsx"
-import { maxCost, moneyFine, pctOf, rowIsOpen, type LedgerRow, type Ledger } from "./model.ts"
+import {
+  highestCost,
+  moneyFine,
+  percentageOf,
+  rowIsOpen,
+  type LedgerRow,
+  type Ledger,
+} from "./model.ts"
 import { vtName } from "./Motion.tsx"
 import { hoverBind, setState, useHover } from "./store.ts"
 
 /** What the footer claims, in words. */
-export function useReconNote(L: Ledger): string {
-  const { d, state, amt } = useReport()
-  const t = pageCopy()
-  if (state.query) return t.breakdown.noteFiltered(amt(L.recon))
-  let s = t.breakdown.noteWhole
-  if (!state.path.length && Math.abs(d.total - L.recon) > 0.005) {
-    const gap = state.pctOnly
-      ? (((d.total - L.recon) / d.total) * 100).toFixed(2) + "%"
-      : moneyFine(d.total - L.recon, 2)
-    s += t.breakdown.noteGap(gap)
+export function useReconNote(ledger: Ledger): string {
+  const { dataset, state, formatAmount } = useReport()
+  const copy = pageCopy()
+  if (state.query) return copy.breakdown.noteFiltered(formatAmount(ledger.recon))
+  let s = copy.breakdown.noteWhole
+  if (!state.path.length && Math.abs(dataset.total - ledger.recon) > 0.005) {
+    const gap = state.amountsHidden
+      ? (((dataset.total - ledger.recon) / dataset.total) * 100).toFixed(2) + "%"
+      : moneyFine(dataset.total - ledger.recon, 2)
+    s += copy.breakdown.noteGap(gap)
   }
   return s
 }
@@ -25,41 +32,41 @@ export function useReconNote(L: Ledger): string {
 /* One row, memoised on `active` rather than on the hover target, so moving the pointer down the
    table re-renders the row entered and the row left instead of all of them. */
 const Row = memo(function Row({
-  r,
+  row,
   maxRow,
   rootCost,
   active,
 }: {
-  r: LedgerRow
+  row: LedgerRow
   maxRow: number
   rootCost: number
   active: boolean
 }): React.JSX.Element {
-  const { state, pal, amt, reqs } = useReport()
-  const t = pageCopy()
-  const h = pal.hue(r.group)
-  const pct = (r.node.cost / rootCost) * 100
+  const { state, palette, formatAmount, requestCount } = useReport()
+  const copy = pageCopy()
+  const hue = palette.hue(row.group)
+  const pct = (row.node.cost / rootCost) * 100
   const name = (
     <span
       className="nm"
-      data-folded={r.node.folded ? 1 : 0}
-      data-code={isCode(t, r.node.name, r.under, r.group || "") ? 1 : 0}
+      data-folded={row.node.folded ? 1 : 0}
+      data-code={isCode(copy, row.node.name, row.parentName, row.group || "") ? 1 : 0}
     >
-      {nodeName(t, r.node)}
+      {nodeName(copy, row.node)}
     </span>
   )
 
   return (
     <tr
-      className={`d${r.depth}`}
-      style={vtName(r.key)}
+      className={`d${row.depth}`}
+      style={vtName(row.key)}
       data-on={active ? 1 : 0}
       {...hoverBind({
-        key: r.hkey,
-        name: r.node.name,
-        cost: r.node.cost,
-        under: r.under,
-        group: r.group || "",
+        key: row.hoverKey,
+        name: row.node.name,
+        cost: row.node.cost,
+        parentName: row.parentName,
+        group: row.group || "",
       })}
     >
       <td className="name">
@@ -67,25 +74,25 @@ const Row = memo(function Row({
           <span
             className="chip"
             style={{
-              width: r.depth ? 6 : 10,
-              height: r.depth ? 6 : 10,
-              background: h,
-              marginLeft: r.depth * 16,
-              borderRadius: r.depth ? "50%" : 0,
+              width: row.depth ? 6 : 10,
+              height: row.depth ? 6 : 10,
+              background: hue,
+              marginLeft: row.depth * 16,
+              borderRadius: row.depth ? "50%" : 0,
             }}
           />
-          {r.hasKids ? (
+          {row.hasChildren ? (
             <button
               type="button"
               className="tog"
-              aria-expanded={r.open}
+              aria-expanded={row.open}
               onClick={() =>
                 setState({
-                  open: { ...state.open, [r.key]: !rowIsOpen(state.open, r.key, r.depth) },
+                  open: { ...state.open, [row.key]: !rowIsOpen(state.open, row.key, row.depth) },
                 })
               }
             >
-              <span className="caret">{r.open ? "–" : "+"}</span>
+              <span className="caret">{row.open ? "–" : "+"}</span>
               {name}
             </button>
           ) : (
@@ -96,31 +103,35 @@ const Row = memo(function Row({
           )}
         </span>
       </td>
-      <td className="num">{amt(r.node.cost)}</td>
+      <td className="num">{formatAmount(row.node.cost)}</td>
       <td className="pct">{pct.toFixed(pct < 1 ? 2 : 1)}%</td>
       <td>
         <span
           className="magbar"
           style={{
-            height: r.depth ? 5 : 9,
-            width: `${Math.max(pctOf(r.node.cost, maxRow), 0.6)}%`,
-            background: h,
+            height: row.depth ? 5 : 9,
+            width: `${Math.max(percentageOf(row.node.cost, maxRow), 0.6)}%`,
+            background: hue,
             opacity: active ? 1 : 0.55,
           }}
         />
       </td>
-      <td className="per">{state.pctOnly ? amt(r.node.cost) : moneyFine(r.node.cost / reqs, 4)}</td>
+      <td className="per">
+        {state.amountsHidden
+          ? formatAmount(row.node.cost)
+          : moneyFine(row.node.cost / requestCount, 4)}
+      </td>
     </tr>
   )
 })
 
-export function LedgerTable({ L }: { L: Ledger }): React.JSX.Element {
-  const { state, amt } = useReport()
-  const t = pageCopy()
+export function LedgerTable({ ledger }: { ledger: Ledger }): React.JSX.Element {
+  const { state, formatAmount } = useReport()
+  const copy = pageCopy()
   const hover = useHover()
-  const hk = hover?.key ?? null
-  const maxRow = maxCost(L.rows.filter((r) => r.depth === 0).map((r) => r.node))
-  const reconShare = L.recon / L.rootCost
+  const hoverKey = hover?.key ?? null
+  const maxRow = highestCost(ledger.rows.filter((row) => row.depth === 0).map((row) => row.node))
+  const reconShare = ledger.recon / ledger.rootCost
 
   return (
     <div className="tblwrap">
@@ -128,45 +139,45 @@ export function LedgerTable({ L }: { L: Ledger }): React.JSX.Element {
         <thead>
           <tr>
             <th scope="col" className="l">
-              {t.table.lineItem}
+              {copy.table.lineItem}
             </th>
             <th scope="col" className="r" style={{ width: 110 }}>
-              {t.table.cost}
+              {copy.table.cost}
             </th>
             <th scope="col" className="r" style={{ width: 78 }}>
-              {t.table.share}
+              {copy.table.share}
             </th>
             <th scope="col" className="l" style={{ width: 230 }}>
-              {t.table.magnitude}
+              {copy.table.magnitude}
             </th>
             <th scope="col" className="last" style={{ width: 110 }}>
-              {state.pctOnly ? t.table.shareOfBill : t.table.perRequest}
+              {state.amountsHidden ? copy.table.shareOfBill : copy.table.perRequest}
             </th>
           </tr>
         </thead>
         <tbody>
-          {L.rows.length ? (
-            L.rows.map((r) => (
+          {ledger.rows.length ? (
+            ledger.rows.map((row) => (
               <Row
-                key={r.key}
-                r={r}
+                key={row.key}
+                row={row}
                 maxRow={maxRow}
-                rootCost={L.rootCost}
-                active={hk === r.hkey || !!hk?.startsWith(r.hkey + "›")}
+                rootCost={ledger.rootCost}
+                active={hoverKey === row.hoverKey || !!hoverKey?.startsWith(row.hoverKey + "›")}
               />
             ))
           ) : (
             <tr>
               <td colSpan={5} style={{ padding: "14px 0", color: "var(--ink3)" }}>
-                {t.table.noMatch(state.query)}
+                {copy.table.noMatch(state.query)}
               </td>
             </tr>
           )}
         </tbody>
         <tfoot>
           <tr>
-            <td className="lbl">{state.query ? t.table.matched : t.breakdown.reconciled}</td>
-            <td className="v">{amt(L.recon)}</td>
+            <td className="lbl">{state.query ? copy.table.matched : copy.breakdown.reconciled}</td>
+            <td className="v">{formatAmount(ledger.recon)}</td>
             <td className="p">{(reconShare * 100).toFixed(reconShare < 0.1 ? 2 : 1)}%</td>
             {/* The sentence lives in `.reconline` directly below, which is where it has to
                 live anyway -- the panels view has no table to put a footer in -- so printing

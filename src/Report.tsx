@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Dataset } from "./engine.ts"
 import { useReport } from "./context.ts"
 import { labelOf, pageCopy, type PageCopy } from "./copy.tsx"
-import { count, FOLD_MIN, ledger, money, moneyFine, pctOf } from "./model.ts"
+import { count, FOLD_MIN, ledger, money, moneyFine, percentageOf } from "./model.ts"
 import { disarmHover, setState, useNarrow, type ViewState } from "./store.ts"
 import { Seg, type SegOption } from "./Seg.tsx"
 import { cssMs, Reveal, transition } from "./Motion.tsx"
@@ -76,9 +76,9 @@ function Crumbs(): React.JSX.Element {
  *  this instance is drawing; unset, it draws both, which is every window wide enough to put them
  *  on one line. */
 export function Strip({ only }: { only?: "thesis" | "figures" }): React.JSX.Element {
-  const { d, state, amt, reqs } = useReport()
+  const { dataset, state, formatAmount, requestCount } = useReport()
   const t = pageCopy()
-  const I = d.insights
+  const I = dataset.insights
   if (only === "thesis")
     return (
       <div className="strip" data-only="thesis">
@@ -96,33 +96,39 @@ export function Strip({ only }: { only?: "thesis" | "figures" }): React.JSX.Elem
       )}
       <div>
         <div className="carryrow">
-          <span className="from">{amt(I.proseGen)}</span>
+          <span className="from">{formatAmount(I.generatedProse)}</span>
           <span className="arrow">→</span>
-          <span className="to">{amt(I.proseCarry)}</span>
+          <span className="to">{formatAmount(I.carriedProse)}</span>
         </div>
         <div className="cap">
-          {t.strip.carried(I.proseGen > 0 ? (I.proseCarry / I.proseGen).toFixed(1) + "×" : "—")}
+          {t.strip.carried(
+            I.generatedProse > 0 ? (I.carriedProse / I.generatedProse).toFixed(1) + "×" : "—",
+          )}
         </div>
       </div>
       <div>
         <div className="big">
-          {pctOf(d.input, d.total).toFixed(1)}% <span className="sm">/</span>{" "}
-          <span className="dim">{pctOf(d.output, d.total).toFixed(1)}%</span>
+          {percentageOf(dataset.input, dataset.total).toFixed(1)}% <span className="sm">/</span>{" "}
+          <span className="dim">{percentageOf(dataset.output, dataset.total).toFixed(1)}%</span>
         </div>
-        <div className="cap">{t.strip.split(pctOf(I.thinking, d.total).toFixed(1) + "%")}</div>
+        <div className="cap">
+          {t.strip.split(percentageOf(I.reasoning, dataset.total).toFixed(1) + "%")}
+        </div>
       </div>
       <div>
         <div className="big">
-          {state.pctOnly ? pctOf(I.fixed, d.total).toFixed(1) + "%" : moneyFine(I.fixed / reqs, 3)}
+          {state.amountsHidden
+            ? percentageOf(I.fixedOverhead, dataset.total).toFixed(1) + "%"
+            : moneyFine(I.fixedOverhead / requestCount, 3)}
           <span className="sm">{t.strip.of}</span>{" "}
           <span className="dim">
-            {state.pctOnly ? t.strip.theBill : moneyFine(d.total / reqs, 3)}
+            {state.amountsHidden ? t.strip.theBill : moneyFine(dataset.total / requestCount, 3)}
           </span>
         </div>
         <div className="cap">
-          {state.pctOnly
-            ? t.strip.fixedMasked(count(d.requests))
-            : t.strip.fixedOpen(money(I.fixed))}
+          {state.amountsHidden
+            ? t.strip.fixedMasked(count(dataset.requests))
+            : t.strip.fixedOpen(money(I.fixedOverhead))}
         </div>
       </div>
     </div>
@@ -187,15 +193,15 @@ function Find(): React.JSX.Element {
 }
 
 export function Breakdown(): React.JSX.Element {
-  const { d, state, amt } = useReport()
+  const { dataset, state, formatAmount } = useReport()
   const t = pageCopy()
   /* Memoised for its identity rather than its cost -- a ledger walk is microseconds, and the
      memoised rows below it are what actually want a stable `L`. */
-  const L = useMemo(
-    () => ledger(d, state.path, state.open, state.query),
-    [d, state.path, state.open, state.query],
+  const ledgerData = useMemo(
+    () => ledger(dataset, state.path, state.open, state.query),
+    [dataset, state.path, state.open, state.query],
   )
-  const note = useReconNote(L)
+  const note = useReconNote(ledgerData)
   return (
     <section className="bsec">
       <div className="bhead">
@@ -206,20 +212,20 @@ export function Breakdown(): React.JSX.Element {
         </div>
       </div>
       <Reveal key={state.view}>
-        {state.view === "panels" ? <Panels /> : <LedgerTable L={L} />}
+        {state.view === "panels" ? <Panels /> : <LedgerTable ledger={ledgerData} />}
       </Reveal>
       <div className="reconline">
         <span>{note}</span>
-        <span>{t.breakdown.reconciledIs(amt(L.recon))}</span>
+        <span>{t.breakdown.reconciledIs(formatAmount(ledgerData.recon))}</span>
       </div>
     </section>
   )
 }
 
 export function Footnotes(): React.JSX.Element {
-  const { data, d, amt } = useReport()
+  const { analysis, dataset, formatAmount } = useReport()
   const t = pageCopy()
-  const I = d.insights
+  const I = dataset.insights
 
   return (
     <section className="foot">
@@ -228,20 +234,20 @@ export function Footnotes(): React.JSX.Element {
         <ul>
           <li>
             {t.foot.intake({
-              ingest: amt(I.ingest),
-              emit: amt(I.emit),
-              typed: amt(I.typed),
-              ratio: I.typed > 0 ? (I.ingest / I.typed).toFixed(0) : null,
+              ingest: formatAmount(I.toolInput),
+              emit: formatAmount(I.toolOutput),
+              typed: formatAmount(I.typedMessages),
+              ratio: I.typedMessages > 0 ? (I.toolInput / I.typedMessages).toFixed(0) : null,
             })}
           </li>
-          <li>{t.foot.preamble(amt(I.fixed), count(d.requests))}</li>
+          <li>{t.foot.preamble(formatAmount(I.fixedOverhead), count(dataset.requests))}</li>
           <li>{t.foot.compact}</li>
         </ul>
       </div>
       <div>
         <h3>{t.foot.caveats}</h3>
         <ul className="cav">
-          {data.warnings.map((warning) => (
+          {analysis.warnings.map((warning) => (
             <li key={warning}>{warning}</li>
           ))}
           <li>{t.foot.foldCaveat((FOLD_MIN * 100).toFixed(1) + "%")}</li>
@@ -294,6 +300,6 @@ export function CardBody(): React.JSX.Element {
 
 /** How the card's header describes the dataset: what the report covers, said in the eyebrow
  *  beside the words that are there whether or not a file has been dropped. */
-export function scopeOf(t: PageCopy, d: Dataset): string {
-  return t.card.scope(count(d.sessions), d.days, count(d.requests))
+export function scopeOf(copy: PageCopy, dataset: Dataset): string {
+  return copy.card.scope(count(dataset.sessions), dataset.days, count(dataset.requests))
 }

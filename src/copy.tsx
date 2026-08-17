@@ -120,8 +120,8 @@ const COPY = {
     hoverIdle: (gen: string, carry: string): string =>
       `Accented block = prose the model wrote once for ${gen}, re-billed as input for ${carry} more. ` +
       "Hover any block for its line item.",
-    hoverLine: (name: string, amount: string, share: string, under: string): string =>
-      `${name}   ${amount}   ${share} of ${under}`,
+    hoverLine: (name: string, amount: string, share: string, parentName: string): string =>
+      `${name}   ${amount}   ${share} of ${parentName}`,
   },
 
   /* the sunburst's own furniture */
@@ -399,8 +399,13 @@ const SHELL = GROUPS.find((g) => g.id === "shell")?.name
 
 /** Whether a name is text off the reader's own machine -- `git status`, `*.ts`, a path -- and so
  *  is set as code rather than as prose. */
-export function isCode(t: PageCopy, name: string, under: string | null, group: string): boolean {
+export function isCode(
+  t: PageCopy,
+  name: string,
+  parentName: string | null,
+  group: string,
+): boolean {
   if (t.labels[name] !== undefined) return false
-  if (under !== null && under !== group && under !== name) return true
+  if (parentName !== null && parentName !== group && parentName !== name) return true
   return group === SHELL
 }

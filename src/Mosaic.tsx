@@ -4,20 +4,20 @@
 import { memo, useMemo } from "react"
 import { useReport } from "./context.ts"
 import { isCode, labelOf, nodeName, pageCopy } from "./copy.tsx"
-import { branches, fold, kidsOf, pctOf, type CostNode } from "./model.ts"
+import { hasBranches, foldSmallNodes, childNodes, percentageOf, type CostNode } from "./model.ts"
 import { hoverBind, useHover, useNarrow } from "./store.ts"
 
 /** How much of its parent a block has to be worth before its name is written on it. Two numbers
  *  because the axis changes: 7% of a column is a readable band of a chart that is tall, while 7%
  *  of a transposed row is fifteen pixels of one that is not. */
-const LABEL_MIN = { cols: 7, rows: 25 }
+const LABEL_MIN = { columns: 7, rows: 25 }
 
 /** A column's blocks: its children, or one block standing for the column itself when it has no
  *  breakdown. */
 function segmentsOf(node: CostNode): CostNode[] {
-  const kids = kidsOf(node)
+  const kids = childNodes(node)
   return kids
-    ? fold(kids, node.cost)
+    ? foldSmallNodes(kids, node.cost)
     : [{ name: node.name, cost: node.cost, children: null, self: true }]
 }
 
@@ -25,64 +25,64 @@ function segmentsOf(node: CostNode): CostNode[] {
    hovered key when it falls inside this column and null when it does not. */
 const Column = memo(function Column({
   node,
-  gname,
-  cumFrom,
-  cumTo,
+  groupName,
+  cumulativeStart,
+  cumulativeEnd,
   width,
   hit,
   anyHover,
   rows,
 }: {
   node: CostNode
-  gname: string
-  cumFrom: number
-  cumTo: number
+  groupName: string
+  cumulativeStart: number
+  cumulativeEnd: number
   width: number
   hit: string | null
   anyHover: boolean
   /** The chart is transposed: this is a row, and its head is a gutter down the left. */
   rows: boolean
 }): React.JSX.Element {
-  const { pal, focus, amt, drill } = useReport()
+  const { palette, focus, formatAmount, drillInto } = useReport()
   const t = pageCopy()
-  const h = pal.hue(gname)
-  const key = gname + "›" + node.name
+  const h = palette.hue(groupName)
+  const key = groupName + "›" + node.name
   const dim = anyHover && !hit
 
-  const segs = segmentsOf(node)
-  const segTotal = segs.reduce((s, x) => s + x.cost, 0) || 1
+  const segments = segmentsOf(node)
+  const segmentTotal = segments.reduce((s, x) => s + x.cost, 0) || 1
 
   /* The 80% mark is the one cumulative number worth calling out: it says how few columns carry
      most of the bill. */
-  const crosses80 = cumFrom < 80 && cumTo >= 80
-  const cum = crosses80 ? "◂80%" : width < 0.075 ? "" : cumTo.toFixed(0) + "%"
-  /* At the root a column is a group, and a group has a short label for the narrow ones. */
-  const short = focus.groupName ? undefined : pal.short(node.name)
+  const crosses80 = cumulativeStart < 80 && cumulativeEnd >= 80
+  const cum = crosses80 ? "◂80%" : width < 0.075 ? "" : cumulativeEnd.toFixed(0) + "%"
+  /* At the root a column is a group, and a group has a shorter label for narrow columns. */
+  const shortName = focus.groupName ? undefined : palette.shortName(node.name)
 
   const bar = (
     <div className="colsegs">
-      {segs.map((s, i) => {
-        const share = s.cost / segTotal,
+      {segments.map((s, i) => {
+        const share = s.cost / segmentTotal,
           pct = share * 100
-        const segKey = key + "›" + s.name
-        const active = hit === segKey || hit === key
-        const named = pct > (rows ? LABEL_MIN.rows : LABEL_MIN.cols)
+        const segmentKey = key + "›" + s.name
+        const active = hit === segmentKey || hit === key
+        const named = pct > (rows ? LABEL_MIN.rows : LABEL_MIN.columns)
         /* Prose re-billed as input is the one block the page argues about, so it keeps full
            strength and a dashed edge while the rest of the column ramps down. */
         const carry = s.name.includes("re-billed")
         return (
           <button
             type="button"
-            key={segKey}
+            key={segmentKey}
             className="segb"
-            title={`${nodeName(t, s)} · ${amt(s.cost)}`}
-            onClick={() => drill(node.name)}
+            title={`${nodeName(t, s)} · ${formatAmount(s.cost)}`}
+            onClick={() => drillInto(node.name)}
             {...hoverBind({
-              key: segKey,
+              key: segmentKey,
               name: s.name,
               cost: s.cost,
-              under: node.name,
-              group: gname,
+              parentName: node.name,
+              group: groupName,
             })}
             style={{
               flex: Math.max(share, 0.002),
@@ -96,7 +96,7 @@ const Column = memo(function Column({
             }}
           >
             {named ? (
-              <span className="sl" data-code={isCode(t, s.name, node.name, gname) ? 1 : 0}>
+              <span className="sl" data-code={isCode(t, s.name, node.name, groupName) ? 1 : 0}>
                 {nodeName(t, s)}
               </span>
             ) : null}
@@ -110,17 +110,17 @@ const Column = memo(function Column({
     <button
       type="button"
       className="colhead"
-      onClick={() => drill(node.name)}
-      {...hoverBind({ key, name: node.name, cost: node.cost, under: null, group: gname })}
+      onClick={() => drillInto(node.name)}
+      {...hoverBind({ key, name: node.name, cost: node.cost, parentName: null, group: groupName })}
     >
       <span
         className="cn"
-        data-code={!short && isCode(t, node.name, null, gname) ? 1 : 0}
+        data-code={!shortName && isCode(t, node.name, null, groupName) ? 1 : 0}
         style={{ fontSize: width < 0.08 ? "10.5px" : "11.5px" }}
       >
-        {short ? labelOf(t, short) : nodeName(t, node)}
+        {shortName ? labelOf(t, shortName) : nodeName(t, node)}
       </span>
-      <span className="cc">{amt(node.cost)}</span>
+      <span className="cc">{formatAmount(node.cost)}</span>
       <span className="cp">
         <span>{(width * 100).toFixed(1)}%</span>
         <span className={crosses80 ? "cum80" : undefined}>{cum}</span>
@@ -132,7 +132,7 @@ const Column = memo(function Column({
     <div
       className="col"
       data-dim={dim ? 1 : 0}
-      data-flat={branches(node) ? 0 : 1}
+      data-flat={hasBranches(node) ? 0 : 1}
       style={{ flex: Math.max(width, 0.012) }}
     >
       {/* Swapped in the markup rather than with `order`, because the gutter really is read
@@ -147,7 +147,7 @@ const Column = memo(function Column({
 export function Mosaic(): React.JSX.Element {
   const { focus } = useReport()
   const hover = useHover()
-  const hk = hover?.key ?? null
+  const hoverKey = hover?.key ?? null
   const rootCost = focus.node.cost || 1
   /* Where the chart turns on its side -- see `[data-lay]` in the stylesheet for what that costs
      and what it buys. */
@@ -155,30 +155,32 @@ export function Mosaic(): React.JSX.Element {
 
   /* Memoised so the folded nodes keep their identity when only the hover moved -- otherwise
      every column would get a fresh `node` prop and the memo above would never hit. */
-  const cols = useMemo(
-    () => fold(focus.node.items || [], rootCost, !focus.groupName),
+  const columns = useMemo(
+    () => foldSmallNodes(focus.node.items || [], rootCost, !focus.groupName),
     [focus, rootCost],
   )
-  const colTotal = cols.reduce((s, n) => s + n.cost, 0) || 1
+  const colTotal = columns.reduce((s, n) => s + n.cost, 0) || 1
 
   let run = 0
   return (
-    <div className="mosaicwrap" data-lay={rows ? "rows" : "cols"}>
+    <div className="mosaicwrap" data-lay={rows ? "rows" : "columns"}>
       <div className="mosaic">
-        {cols.map((n) => {
-          const cumFrom = pctOf(run, rootCost)
+        {columns.map((n) => {
+          const cumulativeStart = percentageOf(run, rootCost)
           run += n.cost
           const key = (focus.groupName || n.name) + "›" + n.name
           return (
             <Column
               key={n.name}
               node={n}
-              gname={focus.groupName || n.name}
-              cumFrom={cumFrom}
-              cumTo={pctOf(run, rootCost)}
+              groupName={focus.groupName || n.name}
+              cumulativeStart={cumulativeStart}
+              cumulativeEnd={percentageOf(run, rootCost)}
               width={n.cost / colTotal}
-              hit={hk && (hk === key || hk.startsWith(key + "›")) ? hk : null}
-              anyHover={!!hk}
+              hit={
+                hoverKey && (hoverKey === key || hoverKey.startsWith(key + "›")) ? hoverKey : null
+              }
+              anyHover={!!hoverKey}
               rows={rows}
             />
           )
@@ -190,25 +192,30 @@ export function Mosaic(): React.JSX.Element {
 
 /** The readout under the mosaic. */
 export function HoverBar(): React.JSX.Element {
-  const { state, pal, focus, amt, d } = useReport()
+  const { state, palette, focus, formatAmount, dataset } = useReport()
   const t = pageCopy()
   const h = useHover()
   const rootCost = focus.node.cost || 1
   const share = h ? (rootCost > 0 ? h.cost / rootCost : 0) : 0
-  const under = state.path.length ? labelOf(t, state.path[state.path.length - 1]) : t.strip.theBill
+  const parentName = state.path.length
+    ? labelOf(t, state.path[state.path.length - 1])
+    : t.strip.theBill
 
   return (
     <div className="hoverbar">
-      <span className="sw" style={{ background: h ? pal.hue(h.group) : "transparent" }} />
+      <span className="sw" style={{ background: h ? palette.hue(h.group) : "transparent" }} />
       <span className="txt" data-on={h ? 1 : 0}>
         {h
           ? t.chart.hoverLine(
-              (h.under ? labelOf(t, h.under) + " › " : "") + labelOf(t, h.name),
-              amt(h.cost),
+              (h.parentName ? labelOf(t, h.parentName) + " › " : "") + labelOf(t, h.name),
+              formatAmount(h.cost),
               (share * 100).toFixed(share < 0.01 ? 2 : 1) + "%",
-              under,
+              parentName,
             )
-          : t.chart.hoverIdle(amt(d.insights.proseGen), amt(d.insights.proseCarry))}
+          : t.chart.hoverIdle(
+              formatAmount(dataset.insights.generatedProse),
+              formatAmount(dataset.insights.carriedProse),
+            )}
       </span>
     </div>
   )
