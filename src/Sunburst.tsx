@@ -149,8 +149,7 @@ function Core({
   const up = state.path.length > 0
   const pct = pctOf(h?.cost ?? 0, rootCost)
 
-  /* What each line stands for, as an identifier rather than as the words -- a token built out of
-     translated copy would fade on a language change. */
+  /* What each line stands for, as an identifier rather than displayed text, so it stays stable. */
   const kAt = h ? "h›" + (h.under ? h.under : h.group) : "r›" + focus.node.name
   const sAt = h ? "h›" + h.key : "r›" + focus.node.name
   /* The amount twice over: a number for the rolling digits, text for the words beside them. Once

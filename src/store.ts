@@ -2,7 +2,6 @@
 
 import { useSyncExternalStore } from "react"
 import type { Analysis } from "./engine.ts"
-import { GUESSED, isLang, noteLang, type Lang } from "./i18n.ts"
 import { pathOf, slug } from "./model.ts"
 
 /** What the pointer (or keyboard focus) is on. */
@@ -28,8 +27,6 @@ export interface ViewState {
   /** Amounts hidden for screen-sharing: shares of the bill instead of dollars. */
   pctOnly: boolean
   theme: ThemeChoice
-  /** Which language the page is in. */
-  lang: Lang
 }
 
 /** The mosaic is nine columns wide with a name and two figures under each, and a phone cannot
@@ -67,8 +64,6 @@ const INITIAL: ViewState = {
   view: "panels",
   pctOnly: false,
   theme: "system",
-  /* The one initial value that is a guess rather than a default. */
-  lang: GUESSED,
 }
 
 let state: ViewState = { ...INITIAL }
@@ -78,9 +73,6 @@ export const getState = (): ViewState => state
 
 export function setState(patch: Partial<ViewState>): void {
   state = { ...state, ...patch }
-  /* The two number formatters are plain functions called by name from inside JSX, so they cannot
-     subscribe to anything. */
-  noteLang(state.lang)
   listeners.forEach((fn) => fn())
 }
 
@@ -182,20 +174,19 @@ export const hoverClear: HoverClearBindings = {
   },
 }
 
-/** Back to a clean slate, keeping the reader's theme and their language: both were chosen for
- *  the session, not for the file. */
+/** Back to a clean slate while keeping the reader's chosen theme for the session. */
 export function resetState(): void {
   /* Armed again rather than disarmed, which is the opposite of what the changes above do and for
      the same reason they do it. */
   armed = true
   setHover(null)
-  setState({ ...INITIAL, theme: state.theme, lang: state.lang })
+  setState({ ...INITIAL, theme: state.theme })
 }
 
 /* URL state ---------- The address is in two halves, split by what Back is for. The path is where
    the reader is -- the report, and the drill inside it -- so going into `shell` is a move the
    browser can undo. The hash holds the settings for that location: which chart,
-   panels-or-table, query, whether amounts are hidden, the theme and the language. */
+   panels-or-table, query, whether amounts are hidden, and the theme. */
 
 /** Where this copy lives, and whether it can hold a path at all: a page served as a file -- the
  *  standalone `cost-report.html`, on `file://` or over http -- has no origin that would serve
@@ -226,8 +217,7 @@ export function readPath(pathname: string): AddressPath {
 
 /** The address applied whole, which is what a Back or a Forward needs: keys the new address does
  *  not carry go back to their defaults, since coming out of a view has to undo what going in
- *  added. The exceptions are the two the reader chose for the session rather than for the file,
- *  and the disclosure the address never carried.
+ *  added. The exceptions are the reader's theme and the disclosure the address never carries.
  *
  *  The bill is passed in because the drill is slugs on the way out and names on the way back,
  *  and only the tree knows which name a slug stood for. */
@@ -237,7 +227,6 @@ export function applyUrl(data: Analysis | null): void {
   setState({
     ...INITIAL,
     theme: state.theme,
-    lang: state.lang,
     open: state.open,
     path: d ? pathOf(d, readPath(location.pathname).slugs) : [],
     ...hash,
@@ -258,21 +247,16 @@ export function readHash(hash: string): Partial<ViewState> {
   if (p.q) out.query = p.q
   if (p.u === "pct") out.pctOnly = true
   if (p.t === "dark" || p.t === "light") out.theme = p.t
-  if (p.l && isLang(p.l)) out.lang = p.l
   return out
 }
 
 export function hashFor(s: ViewState): string {
   const parts: string[] = []
-  /* Against the guess rather than against a constant, for the reason `lang` is below: on a phone
-     the sunburst is where the page started, so it is the mosaic that is worth a key. */
+  /* On a phone the sunburst is where the page starts, so only the mosaic needs a key. */
   if (s.chart !== INITIAL.chart) parts.push("c=" + s.chart)
   if (s.view !== "panels") parts.push("v=" + s.view)
   if (s.query) parts.push("q=" + encodeURIComponent(s.query))
   if (s.pctOnly) parts.push("u=pct")
   if (s.theme !== "system") parts.push("t=" + s.theme)
-  /* Against the guess rather than against a constant, which is the one place this differs from
-     every other key: `en` is not the default, *the reader's own browser* is. */
-  if (s.lang !== GUESSED) parts.push("l=" + s.lang)
   return parts.length ? "#" + parts.join("&") : ""
 }

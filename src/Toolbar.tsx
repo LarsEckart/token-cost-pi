@@ -1,8 +1,7 @@
 /* The instrument's controls. */
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react"
-import { LANGS, useT, type Dict } from "./copy.tsx"
-import { isLang } from "./i18n.ts"
+import { useT, type Dict } from "./copy.tsx"
 import { transition } from "./Motion.tsx"
 import { Cycle, type SegOption } from "./Seg.tsx"
 import { CopyChartButton, ShareButton } from "./Share.tsx"
@@ -37,8 +36,7 @@ function Moon(): React.JSX.Element {
   )
 }
 
-/* The options are built per render rather than written once at module scope, because a word in
-   them changes when the language does and a constant cannot. */
+/* The labels and the next-action tip come from the page copy. */
 const themes = (t: Dict): ReadonlyArray<SegOption<ThemeChoice> & { tip: string }> => [
   { value: "light", label: t.theme.light, icon: <Sun />, tip: t.theme.cycle(t.theme.system) },
   { value: "system", label: t.theme.system, icon: <Display />, tip: t.theme.cycle(t.theme.dark) },
@@ -46,43 +44,6 @@ const themes = (t: Dict): ReadonlyArray<SegOption<ThemeChoice> & { tip: string }
 ]
 
 const pickTheme = (theme: ThemeChoice): void => setState({ theme })
-
-/** A globe, for the one control whose options are words in scripts the rest of the toolbar does
- *  not draw. */
-function Globe(): React.JSX.Element {
-  return (
-    <svg className="glyph" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-      <circle cx="8" cy="8" r="6.4" />
-      <path d="M1.6 8h12.8M8 1.6c1.7 1.8 2.6 4 2.6 6.4S9.7 12.6 8 14.4C6.3 12.6 5.4 10.4 5.4 8s.9-4.6 2.6-6.4Z" />
-    </svg>
-  )
-}
-
-/** The language, as a select rather than as the segmented control every other lens here uses,
- *  and not as the cycle its neighbours use either. */
-function LangPicker(): React.JSX.Element {
-  const { lang } = useViewState()
-  const t = useT()
-  return (
-    <span className="seg langseg">
-      <Globe />
-      <select
-        className="langsel"
-        aria-label={t.language}
-        value={lang}
-        onChange={(e) => {
-          if (isLang(e.target.value)) setState({ lang: e.target.value })
-        }}
-      >
-        {LANGS.map((l) => (
-          <option key={l.value} value={l.value}>
-            {l.label}
-          </option>
-        ))}
-      </select>
-    </span>
-  )
-}
 
 /** The eye every brokerage app puts over its balance. */
 function Eye({ off }: { off: boolean }): React.JSX.Element {
@@ -109,8 +70,7 @@ function MaskToggle({ on }: { on: boolean }): React.JSX.Element {
         aria-describedby={tip}
         onClick={() => transition(() => setState({ pctOnly: !on }), { "data-mask": "" })}
       >
-        {/* Not translated, and not a word: the dollar sign is the thing being covered up,
-            drawn beside the eye that covers it. */}
+        {/* The dollar sign sits beside the eye that covers it. */}
         <span className="eyeamt">$</span>
         <Eye off={on} />
       </button>
@@ -286,12 +246,6 @@ export function Toolbar({
             </Tool>
           </>
         ) : null}
-        {/* Inside the anchor rather than beside it: language and theme are the two controls that
-            exist before there is a bill and outlive any one of them, so they hold the same
-            ground on both faces of the card and everything else grows leftward past them. */}
-        <Tool label={t.language}>
-          <LangPicker />
-        </Tool>
         <Tool label={t.theme.name}>
           <Cycle options={themes(t)} value={state.theme} onPick={pickTheme} />
         </Tool>

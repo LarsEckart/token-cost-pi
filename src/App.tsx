@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import type { Analysis } from "./engine.ts"
 import { applyUrl, readPath, resetState, useViewState } from "./store.ts"
-import { useT } from "./copy.tsx"
-import { tagOf } from "./i18n.ts"
 import { canTransition, cssMs, reduced, transition } from "./Motion.tsx"
 import { Page, type Dir } from "./Page.tsx"
 
@@ -25,16 +23,12 @@ function useTheme(): void {
   }, [theme])
 }
 
-/** And the language, on the same element and for the same reason: `lang` is above `body`, and it
- *  is not decoration -- a screen reader picks its voice from it, and the browser picks its
- *  hyphenation and its quotes. */
-function useLangAttr(): void {
-  const { lang } = useViewState()
-  const t = useT()
+/** The document sits outside React, so set its language and title once when the app mounts. */
+function useDocumentMeta(): void {
   useEffect(() => {
-    document.documentElement.lang = tagOf(lang)
-    document.title = t.card.title
-  }, [lang, t])
+    document.documentElement.lang = "en-US"
+    document.title = "Where the money went — Pi cost attribution"
+  }, [])
 }
 
 interface Turn {
@@ -56,7 +50,7 @@ export function App(): React.JSX.Element {
     dir: "fwd",
   })
   useTheme()
-  useLangAttr()
+  useDocumentMeta()
 
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(

@@ -198,9 +198,7 @@ export function Page({
                   and the question loses two the answer does not have -- so the shared three
                   travel to where the shorter sentence puts them while "did" and "go?" leave and
                   "went" arrives. `data-w` is what the stylesheet names them by; `money` keeps
-                  its accent across the change, which is what makes it the one to follow.
-                  Which slots a language shares is the dictionary's to say: `zh` shares two and
-                  uses no "where" at all, `de` shares three. */}
+                  its accent across the change, which is what makes it the one to follow. */}
               <h1>
                 <TextSwap token={face}>
                   <Heading words={ctx ? t.card.answer : t.card.ask} gap={t.card.gap} />

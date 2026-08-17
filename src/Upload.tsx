@@ -41,8 +41,7 @@ function TuxMark(): React.JSX.Element {
   )
 }
 
-/* The three names are not translated, because they are not words: macOS, Windows and Linux are
-   what the platforms call themselves in every language the page speaks. */
+/* Platform names stay as their makers write them. */
 const PLATFORMS: ReadonlyArray<{ value: Os; label: string; mark: React.JSX.Element }> = [
   { value: "mac", label: "macOS", mark: <AppleMark /> },
   { value: "win", label: "Windows", mark: <WindowsMark /> },

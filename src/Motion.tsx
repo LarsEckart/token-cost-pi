@@ -12,8 +12,6 @@ import {
 } from "react"
 import { flushSync } from "react-dom"
 import NumberFlow, { useIsSupported, type Format } from "@number-flow/react"
-import { tagOf } from "./i18n.ts"
-import { useViewState } from "./store.ts"
 
 /** A custom property off the document root, or `fallback` where the stylesheet has not loaded --
  *  which is every test run, since the suites mount into a bare DOM. */
@@ -122,16 +120,13 @@ export function Reveal({
 const MONEY: Format = {
   style: "currency",
   currency: "USD",
-  /* Both halves of that agreement, including this one: without it the digits would roll under a
-     `US$` in Chinese while `money()` printed a bare `$` beside them. */
+  /* This matches the fixed formatter used by `money()`. */
   currencyDisplay: "narrowSymbol",
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 }
 
-/* A share is written the same way in every language here -- `amt()` and every `toFixed` beside it
-   print a dot and a bare `%` -- so the rolling one is pinned to match rather than localised into
-   a comma and a space the rest of the page's percentages would not have. */
+/* The rolling share uses the same dot and bare percent sign as the rest of the page. */
 const SHARE: Format = { minimumFractionDigits: 1, maximumFractionDigits: 1 }
 const SHARE_FINE: Format = { minimumFractionDigits: 2, maximumFractionDigits: 2 }
 
@@ -150,7 +145,6 @@ export function Figure({
   share?: boolean
 }): React.JSX.Element {
   const supported = useIsSupported()
-  const { lang } = useViewState()
   const still = useReduced()
   if (value === null || !supported || still) {
     return <span className={className}>{text}</span>
@@ -160,11 +154,7 @@ export function Figure({
       {share ? (
         <NumberFlow value={value} locales="en" format={value < 1 ? SHARE_FINE : SHARE} suffix="%" />
       ) : (
-        /* The locale as well as the format, because the two halves of the agreement with
-           `money()` are both locale-dependent: where the grouping separators fall and which
-           side the symbol sits on. Handed the tag rather than left to the browser's own
-           default, which is the reader's machine and not the page's language. */
-        <NumberFlow value={value} locales={tagOf(lang)} format={MONEY} />
+        <NumberFlow value={value} locales="en-US" format={MONEY} />
       )}
     </span>
   )
@@ -200,18 +190,8 @@ export function TextCross({
   inline?: boolean
   children: ReactNode
 }): React.JSX.Element {
-  const { lang } = useViewState()
   const [shown, setShown] = useState<{ token: string; body: ReactNode }>({ token, body: children })
   const [gone, setGone] = useState<{ token: string; body: ReactNode } | null>(null)
-
-  /* A language change rewrites the words without moving any caller's token, and that is a
-     replacement rather than a crossfade -- see `TextSwap` below, which explains why. */
-  const drawn = useRef(lang)
-  if (drawn.current !== lang) {
-    drawn.current = lang
-    setShown({ token: shown.token, body: children })
-    setGone(null)
-  }
 
   /* During the render, so the new words are in the commit: nothing is held back here, which is
      also what makes this safe inside a capture without the check `TextSwap` needs. */
@@ -272,7 +252,6 @@ export function TextSwap({
   children: ReactNode
 }): React.JSX.Element {
   const el = useRef<HTMLSpanElement>(null)
-  const { lang } = useViewState()
   const [shown, setShown] = useState<{ token: string; body: ReactNode }>({ token, body: children })
   const [phase, setPhase] = useState<"" | "exit" | "enter">("")
 
@@ -280,16 +259,6 @@ export function TextSwap({
      of the parent, and a dependency on them would restart the exit leg mid-flight. */
   const latest = useRef(children)
   latest.current = children
-
-  /* The language, in the same place and for the same reason as the token above: during the
-     render, because the words have to be the new words in the commit rather than one frame after
-     it. */
-  const drawn = useRef(lang)
-  if (drawn.current !== lang) {
-    drawn.current = lang
-    /* Only when nothing is in flight. */
-    if (token === shown.token) setShown({ token, body: latest.current })
-  }
 
   /* Inside a capture the words have to be the new words before the swap callback returns: the
      browser photographs the DOM as it stands, and copy held back for its own exit is copy

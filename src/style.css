@@ -234,32 +234,6 @@ button {
     transition: none;
   }
 }
-/* The language picker: a `.seg` box like its neighbours, holding a globe and a native `<select>`
-   rather than a row of buttons. */
-.langseg {
-  align-items: center;
-  padding-left: 9px;
-  color: var(--ink3);
-}
-.langsel {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  padding: 5px 9px 5px 6px;
-  font-size: 11px;
-  font-family: var(--mono);
-  letter-spacing: 0.06em;
-  color: var(--ink2);
-}
-/* Focus goes on the box the reader sees, not on the `<select>` inside it. */
-.langseg:has(.langsel:focus-visible) {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-.langsel:focus-visible {
-  outline: none;
-}
 .eyebtn,
 .freshbtn {
   display: flex;
@@ -338,7 +312,7 @@ button {
   border-right: 2px solid var(--accent);
 }
 /* Four items on a 2×2 grid rather than two stacked blocks, because the caption is the one thing
-   here that must not size a column: covering the amounts adds a clause to it in every language,
+   here that must not size a column: covering the amounts adds a clause to it,
    and as a column of its own that pushed the headline and the eyebrow left by up to 105px. Spanning
    both columns, it grows into the empty half of the headline's line instead. */
 .chead {
@@ -1674,10 +1648,6 @@ tfoot .n {
     padding: 11px 0 10px;
   }
   .seg button,
-  .seg .langsel {
-    padding-top: 10px;
-    padding-bottom: 10px;
-  }
   .crumbs button {
     padding: 8px 0;
   }

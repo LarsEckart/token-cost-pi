@@ -2,7 +2,6 @@
    numbers the components draw, with no React and no DOM in sight. */
 
 import { GROUPS, type Dataset, type GroupId, type Insights } from "./engine.ts"
-import { lang, tag, type Lang } from "./i18n.ts"
 import { postCopy, type PostCopy } from "./post-copy.ts"
 
 /* Every level of the tree -- group, item, child, and the synthetic "other" row folding produces
@@ -30,11 +29,9 @@ export const pctOf = (v: number, max: number): number => (max > 0 && v >= 0 ? (v
 export const maxCost = (list: CostNode[] | null | undefined): number =>
   list && list.length ? Math.max(...list.map((x) => x.cost || 0)) : 0
 
-/* Both formatters ask `i18n` for the current tag rather than taking one, because they are called
-   by name from inside JSX at some fifteen sites and threading a language through all of them
-   would put a fact about the toolbar into the arithmetic. */
+/** Currency values use one fixed locale because the app only ships English copy. */
 const fmt = (digits: number): Intl.NumberFormat =>
-  new Intl.NumberFormat(tag(), {
+  new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
     currencyDisplay: "narrowSymbol",
@@ -47,7 +44,7 @@ export const money = (n: number): string => fmt(2).format(n)
 /** The same, at the precision the per-request figures want. */
 export const moneyFine = (n: number, digits: number): string => fmt(digits).format(n)
 
-export const count = (n: number): string => n.toLocaleString(tag())
+export const count = (n: number): string => n.toLocaleString("en-US")
 
 /** Keep the top items, fold the tail into one labelled row. */
 export function fold(
@@ -63,8 +60,7 @@ export function fold(
   sorted.forEach((n, i) => (i < FOLD_MAX && n.cost >= parentCost * FOLD_MIN ? keep : rest).push(n))
   if (rest.length)
     keep.push({
-      /* The name is an identifier here, not a label: it keys the hover, the view-transition name
-         and the drill path, all of which have to survive a change of language. */
+      /* The name is an identifier here, not a label: it keys hover, transitions, and drill paths. */
       name: "other",
       cost: +rest.reduce((s, n) => s + n.cost, 0).toFixed(2),
       children: null,
@@ -444,7 +440,7 @@ const share = (cost: number, total: number): string => {
 export interface Facts {
   d: Dataset
   masked: boolean
-  /** The sentences, in the language the page is currently in. */
+  /** The English sentences used in a shared post. */
   c: PostCopy
   scope: string
   /** Nameable leaves from the tool-shaped groups, biggest first. */
@@ -472,8 +468,8 @@ export interface Facts {
   per: (cost: number, n: number) => string | null
 }
 
-function factsOf(d: Dataset, pctOnly: boolean, l: Lang): Facts {
-  const c = postCopy(l)
+function factsOf(d: Dataset, pctOnly: boolean): Facts {
+  const c = postCopy()
   const amt = (cost: number): string => (pctOnly ? share(cost, d.total) : money(cost))
   const sayable = (cost: number): boolean => /[1-9]/.test(amt(cost))
 
@@ -676,8 +672,9 @@ const VARIANTS: ((f: Facts) => Draft | Draft[] | null)[] = [
       .filter((g) => f.c.said[g.id] && f.sayable(g.cost))
       .slice(0, 4)
       .map((g) => ({
-        name: /* SAFETY: The preceding filter keeps only groups with a translated label. */ f.c
-          .said[g.id] as string,
+        name: /* SAFETY: The preceding filter keeps only groups with a caption label. */ f.c.said[
+          g.id
+        ] as string,
         amt: f.amt(g.cost),
       }))
     if (rows.length < 3) return null
@@ -730,14 +727,8 @@ function assemble(draft: Draft, home?: string | null): string {
 }
 
 /** Every caption this dataset can honestly carry, in a stable order. */
-export function postVariants(
-  d: Dataset,
-  pctOnly: boolean,
-  home?: string | null,
-  /** Which language to write them in. */
-  l: Lang = lang(),
-): string[] {
-  const f = factsOf(d, pctOnly, l)
+export function postVariants(d: Dataset, pctOnly: boolean, home?: string | null): string[] {
+  const f = factsOf(d, pctOnly)
   return VARIANTS.flatMap((v) => v(f) || []).map((draft) => assemble(draft, home))
 }
 
@@ -748,9 +739,8 @@ export function postText(
   pctOnly: boolean,
   home?: string | null,
   pick: number = Math.random(),
-  l: Lang = lang(),
 ): string {
-  const all = postVariants(d, pctOnly, home, l)
+  const all = postVariants(d, pctOnly, home)
   const i = Math.min(all.length - 1, Math.max(0, Math.floor(pick * all.length)))
   return all[i]
 }

@@ -11,7 +11,6 @@ describe("Pi report state", () => {
       view: "table" as const,
       pctOnly: true,
       theme: "dark" as const,
-      lang: "en" as const,
     }
     expect(readHash(hashFor(state))).toMatchObject({
       query: "bash",

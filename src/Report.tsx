@@ -50,8 +50,7 @@ function Crumbs(): React.JSX.Element {
       >
         {t.chart.all}
       </button>
-      {/* The crumb is a node name, which stays English in the state so the link keeps
-          working across a change of language -- translated here, on the way out. */}
+      {/* The crumb is the node name from state, so it stays aligned with the report tree. */}
       {state.path.map((p, i) => (
         <span key={p}>
           <span className="sep">/</span>
