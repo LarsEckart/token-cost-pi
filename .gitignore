@@ -1,0 +1,26 @@
+# Transcripts and anything derived from them. This app's whole input is private session
+# data; none of it belongs in version control. Keep these patterns even if you never
+# intend to put a transcript here -- the point is that an accident is not committable.
+*.jsonl
+.pi/
+projects/
+transcripts/
+report_data.json
+*.report.json
+
+# Node / Vite. cost-report.html is build output like dist/ is: the deployed page is built
+# from source on Vercel, so a committed copy would only ever be a second thing to keep in
+# sync. Build it locally when you want the double-clickable file.
+node_modules/
+dist/
+cost-report.html
+.vite/
+*.log
+*.tsbuildinfo
+.vercel/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
