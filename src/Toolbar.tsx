@@ -1,7 +1,7 @@
 /* The instrument's controls. */
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react"
-import { useT, type Dict } from "./copy.tsx"
+import { pageCopy, type PageCopy } from "./copy.tsx"
 import { transition } from "./Motion.tsx"
 import { Cycle, type SegOption } from "./Seg.tsx"
 import { CopyChartButton, ShareButton } from "./Share.tsx"
@@ -37,7 +37,7 @@ function Moon(): React.JSX.Element {
 }
 
 /* The labels and the next-action tip come from the page copy. */
-const themes = (t: Dict): ReadonlyArray<SegOption<ThemeChoice> & { tip: string }> => [
+const themes = (t: PageCopy): ReadonlyArray<SegOption<ThemeChoice> & { tip: string }> => [
   { value: "light", label: t.theme.light, icon: <Sun />, tip: t.theme.cycle(t.theme.system) },
   { value: "system", label: t.theme.system, icon: <Display />, tip: t.theme.cycle(t.theme.dark) },
   { value: "dark", label: t.theme.dark, icon: <Moon />, tip: t.theme.cycle(t.theme.light) },
@@ -59,7 +59,7 @@ function Eye({ off }: { off: boolean }): React.JSX.Element {
 /** Cover the dollars. */
 function MaskToggle({ on }: { on: boolean }): React.JSX.Element {
   const tip = useId()
-  const t = useT()
+  const t = pageCopy()
   return (
     <>
       <button
@@ -92,7 +92,7 @@ function Fresh(): React.JSX.Element {
 /** Back to the empty card. */
 function ResetButton({ onReset }: { onReset: () => void }): React.JSX.Element {
   const tip = useId()
-  const t = useT()
+  const t = pageCopy()
   return (
     <span className="seg t-tt-host">
       <button
@@ -151,7 +151,7 @@ export function Toolbar({
   onReset: () => void
 }): React.JSX.Element {
   const state = useViewState()
-  const t = useT()
+  const t = pageCopy()
   const [open, setOpen] = useState(false)
   const burger = useRef<HTMLButtonElement>(null)
   const panel = useId()

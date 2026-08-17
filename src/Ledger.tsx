@@ -2,7 +2,7 @@
 
 import { memo } from "react"
 import { useReport } from "./context.ts"
-import { isCode, nodeName, useT } from "./copy.tsx"
+import { isCode, nodeName, pageCopy } from "./copy.tsx"
 import { maxCost, moneyFine, pctOf, rowIsOpen, type LedgerRow, type Ledger } from "./model.ts"
 import { vtName } from "./Motion.tsx"
 import { hoverBind, setState, useHover } from "./store.ts"
@@ -10,7 +10,7 @@ import { hoverBind, setState, useHover } from "./store.ts"
 /** What the footer claims, in words. */
 export function useReconNote(L: Ledger): string {
   const { d, state, amt } = useReport()
-  const t = useT()
+  const t = pageCopy()
   if (state.query) return t.breakdown.noteFiltered(amt(L.recon))
   let s = t.breakdown.noteWhole
   if (!state.path.length && Math.abs(d.total - L.recon) > 0.005) {
@@ -36,7 +36,7 @@ const Row = memo(function Row({
   active: boolean
 }): React.JSX.Element {
   const { state, pal, amt, reqs } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const h = pal.hue(r.group)
   const pct = (r.node.cost / rootCost) * 100
   const name = (
@@ -116,7 +116,7 @@ const Row = memo(function Row({
 
 export function LedgerTable({ L }: { L: Ledger }): React.JSX.Element {
   const { state, amt } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const hover = useHover()
   const hk = hover?.key ?? null
   const maxRow = maxCost(L.rows.filter((r) => r.depth === 0).map((r) => r.node))

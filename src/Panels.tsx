@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from "react"
 import { useReport } from "./context.ts"
-import { isCode, nodeName, useT } from "./copy.tsx"
+import { isCode, nodeName, pageCopy } from "./copy.tsx"
 import { fold, kidsOf, maxCost, moneyFine, pctOf, type CostNode } from "./model.ts"
 import { vtName } from "./Motion.tsx"
 import { hoverBind, useHover } from "./store.ts"
@@ -25,7 +25,7 @@ const Panel = memo(function Panel({
   anyHover: boolean
 }): React.JSX.Element {
   const { state, pal, amt, reqs, drill } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const h = pal.hue(gname)
   const key = gname + "›" + panel.name
   const dim = anyHover && !hit

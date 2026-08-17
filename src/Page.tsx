@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef } from "react"
 import type { Analysis } from "./engine.ts"
 import { ReportContext, useReportCtx } from "./context.ts"
-import { useT, type Word } from "./copy.tsx"
+import { pageCopy, type Word } from "./copy.tsx"
 import { money } from "./model.ts"
 import {
   applyUrl,
@@ -67,8 +67,7 @@ function useUrlSync(
   }, [report, data])
 }
 
-/** Where the footer points, in the order it reads them. The addresses are the only strings on the
- *  page that are not the dictionary's to translate. */
+/** Where the footer points, in the order it reads them. These labels sit outside the page copy. */
 const LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: "https://github.com/earendil-works/pi-mono", label: "Pi" },
   {
@@ -146,7 +145,7 @@ export function Page({
   onReset: () => void
 }): React.JSX.Element {
   const state = useViewState()
-  const t = useT()
+  const t = pageCopy()
   const ctx = useReportCtx(data, state)
   const narrow = useNarrow()
 

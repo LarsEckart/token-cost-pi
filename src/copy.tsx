@@ -17,9 +17,9 @@ export interface Word {
 
 const words = (value: Word[]) => value
 const platformHelp = (value: Record<Os, React.ReactNode>) => value
-const labelDictionary = (value: Record<string, string>) => value
+const labels = (value: Record<string, string>) => value
 
-const EN = {
+const COPY = {
   /* the toolbar */
   /** The bar folds into one button where there is no room for a row of them. */
   menu: { name: "Tools", close: "Close" },
@@ -325,7 +325,7 @@ const EN = {
   },
 
   /* The tree labels match the engine's stable names and the reader's source data. */
-  labels: labelDictionary({
+  labels: labels({
     all: "all",
     other: "other",
     "Shell commands": "Shell commands",
@@ -364,11 +364,11 @@ const EN = {
   folded: (n: number): string => `other (${n} items)`,
 }
 
-export type Dict = typeof EN
+export type PageCopy = typeof COPY
 
 /** The English words used throughout the page. */
-export function useT(): Dict {
-  return EN
+export function pageCopy(): PageCopy {
+  return COPY
 }
 
 /* the names in the tree ---------- The engine's labels stay English inside the analysis: they
@@ -376,12 +376,12 @@ export function useT(): Dict {
    what the mosaic and the sunburst test to find the block this page argues about. */
 
 /** The two suffixes the engine hangs off a tool's own name when both directions cost real money. */
-const SUFFIXES: ReadonlyArray<[string, (t: Dict) => string]> = [
+const SUFFIXES: ReadonlyArray<[string, (t: PageCopy) => string]> = [
   [" · results", (t) => t.suffix.results],
   [" · call args", (t) => t.suffix.callArgs],
 ]
 
-export function labelOf(t: Dict, name: string): string {
+export function labelOf(t: PageCopy, name: string): string {
   const known = t.labels[name]
   if (known !== undefined) return known
   for (const [suffix, word] of SUFFIXES)
@@ -390,7 +390,7 @@ export function labelOf(t: Dict, name: string): string {
 }
 
 /** A node as the reader should see it named. */
-export function nodeName(t: Dict, n: CostNode): string {
+export function nodeName(t: PageCopy, n: CostNode): string {
   return n.folded ? t.folded(n.foldCount ?? 0) : labelOf(t, n.name)
 }
 
@@ -399,7 +399,7 @@ const SHELL = GROUPS.find((g) => g.id === "shell")?.name
 
 /** Whether a name is text off the reader's own machine -- `git status`, `*.ts`, a path -- and so
  *  is set as code rather than as prose. */
-export function isCode(t: Dict, name: string, under: string | null, group: string): boolean {
+export function isCode(t: PageCopy, name: string, under: string | null, group: string): boolean {
   if (t.labels[name] !== undefined) return false
   if (under !== null && under !== group && under !== name) return true
   return group === SHELL

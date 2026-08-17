@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from "react"
 import { useReport } from "./context.ts"
-import { isCode, labelOf, useT } from "./copy.tsx"
+import { isCode, labelOf, pageCopy } from "./copy.tsx"
 import { Figure, TextCross } from "./Motion.tsx"
 import { pctOf, sunburst, type SunBranch } from "./model.ts"
 import { disarmHover, hoverBind, setState, useHover } from "./store.ts"
@@ -48,7 +48,7 @@ const Sector = memo(function Sector({
   q: string
 }): React.JSX.Element {
   const { pal, amt, drill } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const h = pal.hue(branch.group)
   /* The sector's own sweep, which is the first arc it laid down: `sunburst` walks a branch from
      its root outward, so `arcs[0]` is the ring-0 wedge every other arc here sits under. */
@@ -144,7 +144,7 @@ function Core({
   kids: number
 }): React.JSX.Element {
   const { state, focus, amt, d } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const h = useHover()
   const up = state.path.length > 0
   const pct = pctOf(h?.cost ?? 0, rootCost)
@@ -231,7 +231,7 @@ const LegRow = memo(function LegRow({
   dim: boolean
 }): React.JSX.Element {
   const { amt, drill } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const kids = branch.arcs.filter((a) => a.ring === 1)
   const note = branch.folded
     ? t.sun.foldedNote
@@ -276,7 +276,7 @@ const LegRow = memo(function LegRow({
 
 export function Sunburst(): React.JSX.Element {
   const { focus, state, pal, amt } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const hover = useHover()
   const hk = hover?.key ?? null
   const q = state.query.trim().toLowerCase()

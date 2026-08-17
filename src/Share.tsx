@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useReport } from "./context.ts"
-import { useT, type Dict } from "./copy.tsx"
+import { pageCopy, type PageCopy } from "./copy.tsx"
 import { postText } from "./model.ts"
 import { TextSwap } from "./Motion.tsx"
 import { download, snapshot } from "./snapshot.ts"
@@ -71,14 +71,14 @@ function useChartPng(): [Outcome | null, (then?: () => void) => Promise<void>] {
   return [at, run]
 }
 
-const copyWords = (t: Dict) => ({
+const copyWords = (t: PageCopy) => ({
   busy: t.share.copyBusy,
   copied: t.share.copyDone,
   saved: t.share.copySaved,
   failed: t.share.copyFailed,
 })
 
-const shareWords = (t: Dict) => ({
+const shareWords = (t: PageCopy) => ({
   busy: t.share.busy,
   copied: t.share.copied,
   saved: t.share.saved,
@@ -99,7 +99,7 @@ function XMark(): React.JSX.Element {
 
 export function CopyChartButton(): React.JSX.Element {
   const [at, run] = useChartPng()
-  const t = useT()
+  const t = pageCopy()
   const words = copyWords(t)
   return (
     <button
@@ -119,7 +119,7 @@ export function CopyChartButton(): React.JSX.Element {
 export function ShareButton(): React.JSX.Element {
   const { d, state } = useReport()
   const [at, run] = useChartPng()
-  const t = useT()
+  const t = pageCopy()
   const words = shareWords(t)
 
   const share = (): void => {

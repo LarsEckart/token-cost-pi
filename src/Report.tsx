@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { Dataset } from "./engine.ts"
 import { useReport } from "./context.ts"
-import { labelOf, useT, type Dict } from "./copy.tsx"
+import { labelOf, pageCopy, type PageCopy } from "./copy.tsx"
 import { count, FOLD_MIN, ledger, money, moneyFine, pctOf } from "./model.ts"
 import { disarmHover, setState, useNarrow, type ViewState } from "./store.ts"
 import { Seg, type SegOption } from "./Seg.tsx"
@@ -14,12 +14,12 @@ import { Sunburst } from "./Sunburst.tsx"
 import { LedgerTable, useReconNote } from "./Ledger.tsx"
 
 /* No hints on these four: the words are the whole explanation. */
-const views = (t: Dict): ReadonlyArray<SegOption<ViewState["view"]>> => [
+const views = (t: PageCopy): ReadonlyArray<SegOption<ViewState["view"]>> => [
   { value: "panels", label: t.chart.panels },
   { value: "table", label: t.chart.table },
 ]
 
-const charts = (t: Dict): ReadonlyArray<SegOption<ViewState["chart"]>> => [
+const charts = (t: PageCopy): ReadonlyArray<SegOption<ViewState["chart"]>> => [
   { value: "mosaic", label: t.chart.mosaic },
   { value: "sun", label: t.chart.sunburst },
 ]
@@ -37,7 +37,7 @@ const pickChart = (chart: ViewState["chart"]): void => {
 
 function Crumbs(): React.JSX.Element {
   const { state } = useReport()
-  const t = useT()
+  const t = pageCopy()
   return (
     <nav className="crumbs" aria-label={t.chart.breadcrumb}>
       <button
@@ -77,7 +77,7 @@ function Crumbs(): React.JSX.Element {
  *  on one line. */
 export function Strip({ only }: { only?: "thesis" | "figures" }): React.JSX.Element {
   const { d, state, amt, reqs } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const I = d.insights
   if (only === "thesis")
     return (
@@ -132,7 +132,7 @@ export function Strip({ only }: { only?: "thesis" | "figures" }): React.JSX.Elem
 /** The query box. */
 function Find(): React.JSX.Element {
   const { state } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const [typed, setTyped] = useState(state.query)
   const committed = useRef(state.query)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -188,7 +188,7 @@ function Find(): React.JSX.Element {
 
 export function Breakdown(): React.JSX.Element {
   const { d, state, amt } = useReport()
-  const t = useT()
+  const t = pageCopy()
   /* Memoised for its identity rather than its cost -- a ledger walk is microseconds, and the
      memoised rows below it are what actually want a stable `L`. */
   const L = useMemo(
@@ -218,7 +218,7 @@ export function Breakdown(): React.JSX.Element {
 
 export function Footnotes(): React.JSX.Element {
   const { data, d, amt } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const I = d.insights
 
   return (
@@ -255,7 +255,7 @@ export function Footnotes(): React.JSX.Element {
  *  that frame it. */
 export function CardBody(): React.JSX.Element {
   const { state } = useReport()
-  const t = useT()
+  const t = pageCopy()
   /* The three figures leave the card at this width -- see `Strip`, and `Page`, which is where
      they land. */
   const narrow = useNarrow()
@@ -294,6 +294,6 @@ export function CardBody(): React.JSX.Element {
 
 /** How the card's header describes the dataset: what the report covers, said in the eyebrow
  *  beside the words that are there whether or not a file has been dropped. */
-export function scopeOf(t: Dict, d: Dataset): string {
+export function scopeOf(t: PageCopy, d: Dataset): string {
   return t.card.scope(count(d.sessions), d.days, count(d.requests))
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react"
 import type { Analysis } from "./engine.ts"
-import { useT, type Dict, type Os } from "./copy.tsx"
+import { pageCopy, type PageCopy, type Os } from "./copy.tsx"
 import { TextSwap } from "./Motion.tsx"
 import ScanWorker from "./scan-worker.ts?worker&inline"
 import { Tip } from "./Tip.tsx"
@@ -61,7 +61,7 @@ function FolderMark(): React.JSX.Element {
 /** The one platform, and the way to the next. */
 function OsSwitch({ os, onPick }: { os: Os; onPick: (v: Os) => void }): React.JSX.Element {
   const tip = useId()
-  const t = useT()
+  const t = pageCopy()
   const at = PLATFORMS.findIndex((p) => p.value === os)
   const next = PLATFORMS[(at + 1) % PLATFORMS.length]
   /* `t-tt-host` carries the hint's placement, and where it lands is a question of room -- see
@@ -242,7 +242,7 @@ interface Run {
 }
 
 /** The transcripts, written out as they are read. */
-function Reading({ run, t }: { run: Run; t: Dict }): React.JSX.Element {
+function Reading({ run, t }: { run: Run; t: PageCopy }): React.JSX.Element {
   /* The prompt is a row like any other, so it counts: what the panel shows is the tail of the
      column with the cursor on the bottom line. */
   const roll = Math.max(0, run.lines.length + 1 - SHOWN)
@@ -316,7 +316,7 @@ export function Intake({
   const [busy, setBusy] = useState(false)
   const [over, setOver] = useState(false)
   const [os, setOs] = useState<Os>(guessOs)
-  const t = useT()
+  const t = pageCopy()
   const dirPicker = useRef<HTMLInputElement>(null)
   const worker = useRef<Worker | null>(null)
   const picks = useRef(0)
@@ -630,7 +630,7 @@ export function Intake({
  *  a full one -- so it holds the same ground: two columns on the same rule, across the width of
  *  the shell. */
 export function Where(): React.JSX.Element {
-  const t = useT()
+  const t = pageCopy()
   return (
     <div className="where">
       <div>

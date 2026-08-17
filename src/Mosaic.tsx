@@ -3,7 +3,7 @@
 
 import { memo, useMemo } from "react"
 import { useReport } from "./context.ts"
-import { isCode, labelOf, nodeName, useT } from "./copy.tsx"
+import { isCode, labelOf, nodeName, pageCopy } from "./copy.tsx"
 import { branches, fold, kidsOf, pctOf, type CostNode } from "./model.ts"
 import { hoverBind, useHover, useNarrow } from "./store.ts"
 
@@ -44,7 +44,7 @@ const Column = memo(function Column({
   rows: boolean
 }): React.JSX.Element {
   const { pal, focus, amt, drill } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const h = pal.hue(gname)
   const key = gname + "›" + node.name
   const dim = anyHover && !hit
@@ -191,7 +191,7 @@ export function Mosaic(): React.JSX.Element {
 /** The readout under the mosaic. */
 export function HoverBar(): React.JSX.Element {
   const { state, pal, focus, amt, d } = useReport()
-  const t = useT()
+  const t = pageCopy()
   const h = useHover()
   const rootCost = focus.node.cost || 1
   const share = h ? (rootCost > 0 ? h.cost / rootCost : 0) : 0

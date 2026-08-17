@@ -112,7 +112,7 @@ button {
 .hidden {
   display: none !important;
 }
-/* A name that came off the reader's machine rather than out of the dictionary -- `git status`,
+/* A name that came off the reader's machine rather than out of the page copy -- `git status`,
    `*.ts`, a path. */
 [data-code="1"] {
   font-family: var(--mono);
