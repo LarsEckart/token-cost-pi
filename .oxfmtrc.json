@@ -1,0 +1,25 @@
+{
+  // oxfmt. Comments are used here for the same reason they are in `.oxlintrc.json`: an
+  // exclusion without its reason written down is one somebody deletes in six months.
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+
+  // oxfmt formats the TypeScript and the stylesheet under `src/`. What it is pointed away
+  // from below is hand-composed in a shape the formatter would flatten:
+  //
+  //   *.md    -- README and DESIGN_BRIEF are wrapped by hand to a measure; oxfmt also
+  //              rewrites `*emphasis*` as `_emphasis_`.
+  //   *.html  -- `index.html` is the shell the build inlines into, and is nearly all
+  //              content already.
+  //   *.json  -- the two configs that matter (`.oxlintrc.json`, this file) are comment
+  //              carrying and laid out for reading. `sortPackageJson` would also reorder
+  //              `package.json`.
+  //   .agents -- a vendored skill, not ours to format. `.oxlintrc.json` skips it too.
+  //
+  // `dist`, `cost-report.html` and `node_modules` need no entry: oxfmt reads `.gitignore`.
+  "ignorePatterns": ["*.md", "*.html", "*.json", "*.yaml", ".agents", "tools/oxlint/anti-slop"],
+
+  // No statement-ending semicolons. oxfmt still writes a leading one on the few lines that
+  // would otherwise be swallowed by the line above (a statement opening with `(`, `[`, `` ` ``,
+  // `+`, `-` or `/`), so this is a style choice rather than a correctness one.
+  "semi": false
+}

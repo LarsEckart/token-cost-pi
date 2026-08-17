@@ -1,0 +1,14 @@
+[build]
+command = "pnpm build"
+publish = "dist"
+
+# Reports use browser paths so a shared drilled-in report must load the app first.
+[[redirects]]
+from = "/report"
+to = "/index.html"
+status = 200
+
+[[redirects]]
+from = "/report/*"
+to = "/index.html"
+status = 200

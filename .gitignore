@@ -8,16 +8,16 @@ transcripts/
 report_data.json
 *.report.json
 
-# Node / Vite. cost-report.html is build output like dist/ is: the deployed page is built
-# from source on Vercel, so a committed copy would only ever be a second thing to keep in
-# sync. Build it locally when you want the double-clickable file.
+# Node / Vite. cost-report.html is build output like dist/ is: Netlify builds the deployed page
+# from source, so a committed copy would only ever be a second thing to keep in sync. Build it
+# locally when you want the double-clickable file.
 node_modules/
 dist/
 cost-report.html
 .vite/
 *.log
 *.tsbuildinfo
-.vercel/
+.netlify/
 
 # OS / editor
 .DS_Store

@@ -1,0 +1,3118 @@
+/* Palette, type and layout from the original Cost Report design: warm
+   grey-green paper, brick accent, 8 categorical hues + neutral for the 9th. */
+:root {
+  --paper: #ebede8;
+  --panel: #f4f5f2;
+  --sunk: #e1e4de;
+  --ink: #121614;
+  --ink2: #4c5450;
+  --ink3: #78817c;
+  --rule: #cbd0c9;
+  --hair: #dce0d9;
+  --accent: #a8330e;
+  --accent-soft: #f0ddd5;
+  --c1: #c2410c;
+  --c2: #a16207;
+  --c3: #4d7c0f;
+  --c4: #0f766e;
+  --c5: #1d4ed8;
+  --c6: #6d28d9;
+  --c7: #a21caf;
+  --c8: #be123c;
+  --cn: #6b7280;
+  --on-cat: #ffffff;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* Told, rather than left to be inferred from the background. */
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #0c0f0e;
+    --panel: #141817;
+    --sunk: #1b201e;
+    --ink: #e9ede9;
+    --ink2: #9aa39e;
+    --ink3: #727b76;
+    --rule: #2b312e;
+    --hair: #202623;
+    --accent: #ff7a45;
+    --accent-soft: #2e1a12;
+    --c1: #fb923c;
+    --c2: #fbbf24;
+    --c3: #a3e635;
+    --c4: #2dd4bf;
+    --c5: #60a5fa;
+    --c6: #a78bfa;
+    --c7: #e879f9;
+    --c8: #fb7185;
+    --cn: #9ca3af;
+    --on-cat: #0a0d0c;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: #0c0f0e;
+  --panel: #141817;
+  --sunk: #1b201e;
+  --ink: #e9ede9;
+  --ink2: #9aa39e;
+  --ink3: #727b76;
+  --rule: #2b312e;
+  --hair: #202623;
+  --accent: #ff7a45;
+  --accent-soft: #2e1a12;
+  --c1: #fb923c;
+  --c2: #fbbf24;
+  --c3: #a3e635;
+  --c4: #2dd4bf;
+  --c5: #60a5fa;
+  --c6: #a78bfa;
+  --c7: #e879f9;
+  --c8: #fb7185;
+  --cn: #9ca3af;
+  --on-cat: #0a0d0c;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+button {
+  font: inherit;
+  color: inherit;
+  font-variant-numeric: tabular-nums;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+/* The tail is short because the colophon ends the page: the deep one here was what stopped the
+   last line of body copy sitting on the bottom of the window, and a footer does that itself. */
+.shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px 24px 32px;
+}
+.hidden {
+  display: none !important;
+}
+/* A name that came off the reader's machine rather than out of the dictionary -- `git status`,
+   `*.ts`, a path. */
+[data-code="1"] {
+  font-family: var(--mono);
+}
+/* Positioned, and above what follows it. */
+.toolbar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.tick {
+  flex: 1;
+  min-width: 60px;
+  height: 9px;
+  background: repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 9px);
+}
+/* Above the breakpoint there is no panel: the wrapper and the row labels fold away and every
+   control is a direct item of the bar again, which is what keeps this one set of controls
+   rather than two that have to be kept in step. */
+.tools,
+.tool {
+  display: contents;
+}
+.toollbl,
+.toolhead,
+.burger,
+.scrim {
+  display: none;
+}
+/* The mask is drawn in the bar rather than in the panel, so it comes before the panel's controls
+   in the document: up here the rule and the actions step in front of it, which seats it back
+   among the lenses where it has always been. Nothing to undo below the breakpoint -- there the
+   panel reads in document order -- so this is the one rule in the file naming the wide side. */
+@media (min-width: 821px) {
+  .tick,
+  .tool:has(.linkish, .freshbtn) {
+    order: -1;
+  }
+}
+/* An action rather than a lens, so it is words on the paper with a rule under them rather than a
+   button in a box. */
+.linkish {
+  background: none;
+  border: 0;
+  padding: 3px 0 2px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink2);
+  border-bottom: 1px solid var(--rule);
+}
+.linkish[data-on="1"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.linkish:disabled {
+  cursor: progress;
+  color: var(--ink3);
+}
+.xicon {
+  width: 8.5px;
+  height: 8.5px;
+  fill: currentColor;
+  margin-left: 5px;
+}
+.seg {
+  display: flex;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+}
+.seg button {
+  padding: 5px 11px;
+  font-size: 11px;
+  font-family: var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: var(--ink2);
+}
+.seg button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+/* An option drawn as a picture rather than a word. */
+.seg button[data-icon] {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+}
+/* A control that shows the option it is on and walks to the next when pressed. */
+.cycbtn {
+  color: var(--ink2);
+  transition: color var(--duration-fast) var(--ease-smooth-out);
+}
+.cycbtn:hover,
+.cycbtn:focus-visible {
+  color: var(--ink);
+}
+/* The swap wrapper is `inline-block` by default, which would leave a glyph sitting on the text
+   baseline inside a button laid out as a row. */
+.cycbtn .t-text-swap,
+.cycface {
+  display: flex;
+  align-items: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cycbtn {
+    transition: none;
+  }
+}
+/* The language picker: a `.seg` box like its neighbours, holding a globe and a native `<select>`
+   rather than a row of buttons. */
+.langseg {
+  align-items: center;
+  padding-left: 9px;
+  color: var(--ink3);
+}
+.langsel {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 5px 9px 5px 6px;
+  font-size: 11px;
+  font-family: var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--ink2);
+}
+/* Focus goes on the box the reader sees, not on the `<select>` inside it. */
+.langseg:has(.langsel:focus-visible) {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.langsel:focus-visible {
+  outline: none;
+}
+.eyebtn,
+.freshbtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.eyeamt {
+  font-size: 12px;
+}
+/* Every stroked mark in a control -- the eye, the sun, the display, the moon -- at one weight
+   and one size, in `currentColor` so it inverts under the pill. */
+.glyph {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+/* Fixed ratios because the card is the thing people screenshot: 16/9 suits the mosaic, which is
+   a wide band, and a disc in a wide band comes out small, so the sunburst gets 4/3 instead. */
+/* `width` is pinned rather than left to `auto`, and that is load-bearing: a ratio plus a floor
+   resolves in either direction, so a card whose height is being held at 600px by `min-height`
+   will happily work *back* to a width of 600 × 16/9 = 1067px and hang out of a narrower column. */
+.card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ink);
+  background: var(--panel);
+  padding: 20px 22px 16px;
+}
+.card[data-chart="sun"] {
+  aspect-ratio: 4/3;
+}
+/* The empty face. */
+.card[data-face="empty"] {
+  border-style: dashed;
+}
+/* Lit from the zone inside it, because the frame the reader is aiming at is the frame that
+   should answer. */
+.card:has([data-over="1"]) {
+  border-color: var(--accent);
+}
+.br {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+}
+.br1 {
+  top: 5px;
+  left: 5px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+}
+.br2 {
+  top: 5px;
+  right: 5px;
+  border-top: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+}
+.br3 {
+  bottom: 5px;
+  left: 5px;
+  border-bottom: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+}
+.br4 {
+  bottom: 5px;
+  right: 5px;
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
+}
+/* Four items on a 2×2 grid rather than two stacked blocks, because the caption is the one thing
+   here that must not size a column: covering the amounts adds a clause to it in every language,
+   and as a column of its own that pushed the headline and the eyebrow left by up to 105px. Spanning
+   both columns, it grows into the empty half of the headline's line instead. */
+.chead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 24px;
+  align-items: end;
+}
+.chead > div {
+  display: contents;
+}
+.chead .eyebrow {
+  grid-area: 1 / 1;
+}
+.chead .billed {
+  grid-area: 1 / 1 / 2 / 3;
+  justify-self: end;
+  white-space: nowrap;
+}
+.chead .total {
+  grid-area: 2 / 2;
+  justify-self: end;
+}
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.chead h1 {
+  grid-area: 2 / 1;
+  margin: 5px 0 0;
+  font-size: 31px;
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  font-weight: 700;
+  text-wrap: balance;
+}
+/* The one word both tenses of the heading share, so it is the one that keeps its colour across
+   the change. */
+.chead h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+.cfig {
+  text-align: right;
+}
+/* Transparent to the header's grid, so the caption inside it stays the grid item it has always
+   been and only a narrow window makes a box of it. */
+.qual {
+  display: contents;
+}
+.billed {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+/* The figure's box is the type's, and the rolling digits are let out of it. `--fig` is how many
+   characters the figure has, so the four asterisks that cover it hold the width it had -- the
+   count is never drawn, which is the point: the box stays put and the figure stays hidden. */
+.total {
+  font-family: var(--mono);
+  font-size: 33px;
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  height: 1.02em;
+  min-width: calc(var(--fig, 0) * 1ch - var(--fig, 0) * 0.03em);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+.total[data-hidden="1"],
+.total[data-empty="1"] {
+  color: var(--ink3);
+}
+/* An asterisk hangs at the top of its line box, so four of them left where the figure was read
+   as a footnote marker floating above an empty space rather than as the figure covered up. */
+.mask {
+  display: inline-block;
+  transform: translateY(0.26em);
+  letter-spacing: 0.1em;
+}
+.strip {
+  margin-top: 13px;
+  display: grid;
+  grid-template-columns: 1.55fr 1fr 1fr 1fr;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--hair);
+}
+.strip > div {
+  padding: 11px 16px;
+  border-right: 1px solid var(--hair);
+}
+.strip > div:first-child {
+  padding: 11px 18px 11px 0;
+}
+.strip > div:last-child {
+  padding: 11px 0 11px 16px;
+  border-right: 0;
+}
+.thesis {
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-wrap: pretty;
+}
+.thesis em {
+  font-style: normal;
+  color: var(--accent);
+}
+.big {
+  font-family: var(--mono);
+  font-size: 21px;
+  font-weight: 600;
+}
+.big .sm {
+  color: var(--ink3);
+  font-weight: 400;
+  font-size: 15px;
+}
+.big .dim {
+  color: var(--ink2);
+}
+.cap {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink2);
+  margin-top: 5px;
+}
+.carryrow {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  font-family: var(--mono);
+}
+.carryrow .from {
+  font-size: 14px;
+  color: var(--ink2);
+}
+.carryrow .arrow {
+  color: var(--ink3);
+}
+.carryrow .to {
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.mosaichead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0 7px;
+}
+.mosaichead .lbl {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  flex-wrap: wrap;
+}
+.crumbs button {
+  background: none;
+  border: 0;
+  padding: 2px 0;
+  cursor: pointer;
+  color: var(--ink2);
+  border-bottom: 1px solid var(--rule);
+}
+.crumbs button[data-cur="1"] {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.crumbs .sep {
+  color: var(--ink3);
+}
+.mosaichead .crumbs {
+  justify-content: flex-end;
+}
+.mosaicwrap {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  border-top: 1px solid var(--hair);
+}
+.mosaic {
+  display: flex;
+  height: 100%;
+  min-width: 860px;
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  min-width: 62px;
+  border-right: 1px solid var(--hair);
+  transition: filter 0.16s;
+}
+.col[data-dim="1"] {
+  filter: saturate(0.5) opacity(0.9);
+}
+.colsegs {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.segb {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 2px;
+  border: 0;
+  border-bottom: 1px solid var(--panel);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    opacity 0.14s,
+    filter 0.14s;
+}
+.segb .sl {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.2;
+  color: var(--on-cat);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.colhead {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: none;
+  border: 0;
+  padding: 7px 7px 2px;
+  text-align: left;
+  cursor: pointer;
+  flex: 0 0 auto;
+  min-height: 64px;
+}
+.colhead .cn {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.14;
+  overflow: hidden;
+  word-break: break-word;
+}
+.colhead .cc {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink2);
+  margin-top: 3px;
+}
+.colhead .cp {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--ink3);
+  margin-top: 1px;
+}
+.colhead .cum80 {
+  color: var(--accent);
+}
+
+/* The same chart, turned on its side.
+   ───────────────────────────────────────────────────────────────────────────── The `min-width`
+   floor above is what keeps a small column legible, and it is also exactly what forces 620px of
+   horizontal scroll onto a phone. Transposed the floor becomes vertical extent, which a phone
+   has: a row per line item, height = share of the bill, blocks running across it, and the name
+   in a gutter down the left. Only the narrowest band, because the one shape rows are worse for
+   is a phone held sideways -- 740px across and 360px tall. Keyed off an attribute rather than a
+   media query so the PNG is taken in the layout it was looking at, and so every rule here
+   outranks its upright twin whatever the source order. */
+.mosaicwrap[data-lay="rows"] {
+  overflow-x: visible;
+  height: auto;
+  min-height: 0;
+}
+[data-lay="rows"] .mosaic {
+  flex-direction: column;
+  min-width: 0;
+  height: auto;
+  /* `min-height` rather than `height`: fifteen folded rows against their own floor need more
+     than this, and a minimum lets the block grow for them while still handing flex a definite
+     size to divide into row heights whenever they fit. */
+  min-height: min(72vh, 560px);
+}
+[data-lay="rows"] .col {
+  flex-direction: row;
+  min-width: 0;
+  min-height: 46px;
+  border-right: 0;
+  border-bottom: 1px solid var(--hair);
+}
+[data-lay="rows"] .colsegs {
+  flex-direction: row;
+}
+[data-lay="rows"] .segb {
+  justify-content: center;
+  min-width: 2px;
+  min-height: 0;
+  border-bottom: 0;
+  border-right: 1px solid var(--panel);
+}
+[data-lay="rows"] .colhead {
+  /* Every pixel here comes off the bar, which is the thing being read -- so the gutter is sized
+     to the widest figure it has to hold rather than to the longest name, and names longer than
+     that are cut. */
+  flex: 0 0 clamp(74px, 22%, 96px);
+  justify-content: center;
+  min-height: 0;
+  padding: 4px 8px 4px 0;
+  overflow: hidden;
+}
+/* Three lines in a row that may be no taller than its floor, so the name is cut rather than
+   wrapped -- a wrap here would push the row past the share it stands for. */
+[data-lay="rows"] .colhead .cn {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  word-break: normal;
+}
+/* Footnote and chart switch share one row on the closing rule, so the switch reads as belonging
+   to the card rather than to the mosaic's header. */
+.cardfoot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 9px;
+  border-top: 1px solid var(--ink);
+}
+.cardfoot .seg {
+  flex: 0 0 auto;
+}
+.hoverbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 20px;
+  flex: 1;
+  min-width: 0;
+}
+.hoverbar .sw {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+}
+.hoverbar .txt {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--ink2);
+  overflow: hidden;
+}
+.hoverbar .txt[data-on="1"] {
+  color: var(--ink);
+  font-family: var(--mono);
+}
+.bsec {
+  margin-top: 30px;
+}
+.bhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 8px;
+}
+.bhead h2 {
+  margin: 0;
+  font-size: 13px;
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink2);
+}
+.bctl {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.bctl label {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.bctl input {
+  font: inherit;
+  font-size: 13px;
+  font-family: var(--mono);
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  padding: 5px 9px;
+  width: 230px;
+}
+/* The page's `:focus-visible` ring is drawn for things that have no focused state of their own
+   -- a button, a segment, a link -- and it is drawn 2px thick and 2px clear of the box so it
+   reads against them. */
+.bctl input:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  border-top: 0;
+}
+.pan {
+  background: var(--paper);
+  padding: 13px 15px 12px;
+}
+.pantop {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+/* The name, with the group's colour upright beside it. */
+.pantop button {
+  background: none;
+  border: 0;
+  border-left: 4px solid var(--hue, currentcolor);
+  padding: 0 0 0 11px;
+  margin-left: -15px;
+  line-height: 1.25;
+  cursor: pointer;
+  font-size: 14.5px;
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink);
+}
+.pantop .pc {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+}
+.panbar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 8px;
+}
+.track {
+  flex: 1;
+  height: 6px;
+  background: var(--sunk);
+  display: block;
+}
+.track > span {
+  display: block;
+  height: 6px;
+}
+.panbar .pr {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink3);
+  width: 104px;
+  text-align: right;
+}
+.panitems {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.pi {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 2px 0;
+}
+.pi[data-on="1"] {
+  background: var(--sunk);
+}
+.pi button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  width: 128px;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink2);
+}
+.pi button[data-folded="1"] {
+  color: var(--ink3);
+  font-style: italic;
+}
+.pi .tk {
+  flex: 1;
+  height: 4px;
+  background: var(--sunk);
+  display: block;
+  min-width: 34px;
+}
+.pi .tk > span {
+  display: block;
+  height: 4px;
+}
+.pi .pv {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  width: 72px;
+  text-align: right;
+  color: var(--ink2);
+}
+.panfoot {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink3);
+}
+/* The sunburst stands where the mosaic does, so it takes the same slot: fill what the card has
+   left, and let the disc take its size from the height rather than the width -- a circle that
+   overflows its row is worse than one that leaves margin beside the legend. */
+.sun {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  border-top: 1px solid var(--hair);
+  padding-top: 12px;
+}
+.sunchart {
+  position: relative;
+  flex: 0 0 auto;
+  height: 100%;
+  aspect-ratio: 1;
+  container-type: size;
+}
+.sunchart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sunarc {
+  stroke: var(--paper);
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: opacity 0.13s;
+}
+.sunarc[data-on="1"] {
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+.suncarry {
+  fill: none;
+  pointer-events: none;
+  stroke: var(--paper);
+  stroke-width: 0.9;
+  stroke-dasharray: 2.2 1.8;
+}
+.suncore {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.suncore > * {
+  pointer-events: auto;
+  width: 36%;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  text-align: center;
+}
+.suncore > button {
+  cursor: pointer;
+}
+.suncore > button:hover .v {
+  color: var(--accent);
+}
+/* The hole's type is sized off the chart, not the viewport: the disc takes its size from
+   whatever the card has left, so a readout fixed in px is either lost in it or spilling out of
+   it. */
+/* The eyebrow is ours -- a tool, a group -- so it is set in the page's own face, and the mono is
+   spent on the line below it, which is usually a path or a command. */
+.suncore .k {
+  max-width: 92%;
+  font-size: 9.5px;
+  font-size: clamp(9px, 1.9cqw, 15px);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suncore .v {
+  font-family: var(--mono);
+  font-size: clamp(15px, 2.3vw, 23px);
+  font-size: clamp(15px, 5.6cqw, 38px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  white-space: nowrap;
+}
+.suncore .s {
+  max-width: 90%;
+  font-size: 10.5px;
+  font-size: clamp(10px, 2.1cqw, 16px);
+  line-height: 1.35;
+  color: var(--ink2);
+  overflow: hidden;
+  text-wrap: balance;
+}
+.suncore .s .dim {
+  display: block;
+  color: var(--ink3);
+}
+/* The name crossfades, which puts a box between the line's own rules and its words -- so the
+   eyebrow's trim has to move onto the box that holds them. */
+.suncore .k .leg {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sunlegend {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+.legrow {
+  display: grid;
+  grid-template-columns: 9px minmax(72px, auto) 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 5px 7px 5px 0;
+  border-bottom: 1px solid var(--hair);
+  transition: opacity 0.13s;
+}
+.legrow[data-on="1"] {
+  background: var(--sunk);
+}
+.legrow[data-dim="1"] {
+  opacity: 0.4;
+}
+.legrow .sw {
+  width: 9px;
+  height: 9px;
+  align-self: center;
+}
+.legrow button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+  border-bottom: 1px solid transparent;
+  white-space: nowrap;
+}
+.legrow button:hover {
+  border-bottom-color: var(--ink);
+}
+.legrow button[data-folded="1"] {
+  color: var(--ink3);
+  font-style: italic;
+  font-weight: 400;
+}
+.legrow .note {
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.legrow .val {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.sunempty {
+  padding: 22px 0;
+  font-size: 13px;
+  color: var(--ink3);
+}
+.tblwrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+thead tr {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+thead th {
+  font-weight: 400;
+  padding: 8px;
+}
+thead th.l {
+  text-align: left;
+  padding-left: 0;
+}
+thead th.r {
+  text-align: right;
+}
+thead th.last {
+  text-align: right;
+  padding-right: 0;
+}
+tbody tr {
+  border-bottom: 1px solid var(--hair);
+}
+tbody tr[data-on="1"] {
+  background: var(--sunk);
+}
+td {
+  padding: 7px 8px;
+}
+td.name {
+  padding: 7px 8px 7px 0;
+}
+td.num {
+  text-align: right;
+  font-family: var(--mono);
+}
+td.pct {
+  text-align: right;
+  font-family: var(--mono);
+  color: var(--ink2);
+  font-size: 12.5px;
+}
+td.per {
+  text-align: right;
+  padding-right: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink2);
+}
+.namecell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chip {
+  flex: 0 0 auto;
+}
+.tog {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.caret {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink3);
+  width: 8px;
+}
+tr.d0 .nm {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+tr.d1 .nm,
+tr.d2 .nm {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 400;
+}
+.nm[data-folded="1"] {
+  color: var(--ink3);
+  font-style: italic;
+}
+tr.d0 td.num {
+  font-weight: 600;
+}
+.magbar {
+  display: block;
+}
+tfoot tr {
+  border-top: 2px solid var(--ink);
+}
+tfoot td {
+  padding: 10px 8px;
+}
+tfoot .lbl {
+  padding-left: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+tfoot .v {
+  text-align: right;
+  font-family: var(--mono);
+  font-weight: 600;
+}
+tfoot .p {
+  text-align: right;
+  font-family: var(--mono);
+  color: var(--ink2);
+}
+tfoot .n {
+  padding-left: 8px;
+  padding-right: 0;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.reconline {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--ink3);
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.reconline strong {
+  font-family: var(--mono);
+  color: var(--ink2);
+}
+.foot {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  border-top: 1px solid var(--rule);
+  padding-top: 16px;
+}
+.foot h3 {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+.foot ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink2);
+  /* The measure is capped in `em` rather than `ch`, because `ch` is cut from the `0` and a
+     Japanese glyph is twice that wide -- 52ch is a full line of English and half a line of
+     Japanese, which is what left both columns short of their own width. */
+  max-width: 44em;
+}
+.foot .cav {
+  font-size: 12.5px;
+  color: var(--ink3);
+}
+.foot strong {
+  color: var(--ink);
+}
+/* The page's footer rather than the report's: it stands under both faces, so its rule is the
+   hairline and not the heavier one `.foot` uses to open a section of the report. */
+.colophon {
+  margin-top: 40px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hair);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.colophon nav {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.colophon a {
+  color: var(--ink2);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--rule);
+}
+/* Links beside the note are labels rather than words in a sentence. */
+.colophon nav a {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.colophon nav a[data-code="1"] {
+  text-transform: none;
+}
+.colophon a:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+@media (max-width: 820px) {
+  .strip {
+    grid-template-columns: 1fr 1fr;
+  }
+  .strip > div,
+  .strip > div:first-child,
+  .strip > div:last-child {
+    padding: 11px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--hair);
+  }
+  .foot {
+    grid-template-columns: 1fr;
+  }
+  /* The card stops being a frame with a picture fitted into it and becomes a column of blocks
+     that is as tall as they are. The sunburst's own ratio has to be named to be undone: it is a
+     class and an attribute, so a bare `.card` here loses to it and the card stays 4/3.
+     And it stops being a card at all: a frame costs about 30px of width and the same again in
+     height to say "these things belong together", which on a phone is the only thing on screen
+     anyway. The rule under the chart is left to do that job on its own. */
+  .card,
+  .card[data-chart="sun"],
+  .card[data-face="empty"] {
+    aspect-ratio: auto;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .br {
+    display: none;
+  }
+  /* Nothing frames the drop target any more, so the answer to a folder held over the page is the
+     ground under it. */
+  .card:has([data-over="1"]) {
+    background: var(--accent-soft);
+  }
+  /* the bar, folded into one button ------- */
+  .burger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid var(--rule);
+    background: var(--panel);
+    color: var(--ink2);
+    cursor: pointer;
+  }
+  .burger .glyph {
+    width: 17px;
+    height: 17px;
+  }
+  /* The one control that stays out of the panel, held to the height of the button beside it. */
+  .maskslot .seg {
+    height: 40px;
+  }
+  .tools {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(310px, 82vw);
+    z-index: 60;
+    padding: 15px 18px 28px;
+    background: var(--panel);
+    border-left: 1px solid var(--ink);
+    overflow-y: auto;
+    /* The page under it does not take the scroll when the panel runs out of it. */
+    overscroll-behavior: contain;
+    transform: translateX(101%);
+    /* Hidden rather than merely off-screen, so a panel nobody has opened is not seven stops in
+       the tab order sitting past the right edge of the window. */
+    visibility: hidden;
+    transition:
+      transform var(--duration-medium) var(--ease-smooth-out),
+      visibility 0s linear var(--duration-medium);
+  }
+  .tools[data-open="1"] {
+    transform: none;
+    visibility: visible;
+    transition:
+      transform var(--duration-slow) var(--ease-smooth-out),
+      visibility 0s;
+  }
+  .toolhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 11px;
+    border-bottom: 1px solid var(--ink);
+  }
+  .tooltitle {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink3);
+  }
+  .toolx {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    margin-right: -8px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ink2);
+    cursor: pointer;
+  }
+  .tool {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 54px;
+    border-bottom: 1px solid var(--hair);
+  }
+  .toollbl {
+    display: block;
+    font-size: 12.5px;
+    line-height: 1.25;
+    color: var(--ink2);
+  }
+  /* The underline stays. It is what separates the two kinds of row here: an action is mono caps
+     with a rule under the words, a lens is a name with a control beside it -- and stripped of
+     the rule, the two actions read as headings for the rows below them. */
+  .tool .linkish {
+    font-size: 12px;
+  }
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 59;
+    padding: 0;
+    border: 0;
+    background: color-mix(in srgb, var(--ink) 44%, transparent);
+    opacity: 0;
+    pointer-events: none;
+    cursor: default;
+    transition: opacity var(--duration-medium) var(--ease-out);
+  }
+  .scrim[data-open="1"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .cardfoot {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .cardfoot .hoverbar {
+    flex-basis: 100%;
+  }
+  /* `flex: 1` is `flex-basis: 0`, so a slot that keeps it contributes nothing to the height its
+     own contents need -- which on a fixed 16/9 frame is the point, and here is what drew the
+     sunburst straight through the strip above it. The rest of the column is answered at the foot
+     of this file; only `.sun` can be answered here, because only `.sun` is written above. */
+  .sun {
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 16px;
+    /* Anything left over goes below the chart rather than half above it, which is where centring
+       a column that overflows puts it. */
+    justify-content: flex-start;
+  }
+  .sunchart {
+    height: auto;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .sunlegend {
+    width: 100%;
+    max-height: none;
+    flex: 0 0 auto;
+  }
+  /* The mosaic is the other chart, and it is the one that cannot be made narrow: nine columns
+     with a name under each. It keeps its own scroller and is given a definite height, since the
+     slot around it no longer has one to hand down. */
+  .mosaicwrap {
+    flex: 0 0 auto;
+    height: min(56vh, 420px);
+    min-height: 300px;
+  }
+  .mosaic {
+    min-width: 620px;
+  }
+  /* The caption is three lines at this width, so the breadcrumb gets its own rather than sitting
+     against the end of the first one. */
+  .mosaichead {
+    flex-wrap: wrap;
+    row-gap: 5px;
+  }
+  .mosaichead .lbl {
+    flex: 1 1 100%;
+  }
+  .mosaichead .crumbs {
+    justify-content: flex-start;
+  }
+  .shell {
+    padding: 18px 16px 24px;
+  }
+  /* The find box and the view switch get their own line under the heading, and the box takes
+     whatever is left of it rather than the 230px it asks for on a desktop. */
+  .bctl {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .bctl input {
+    flex: 1 1 120px;
+    width: auto;
+    min-width: 0;
+  }
+}
+/* The narrowest band, where two of anything side by side is one too many. The help under the
+   empty card is not here because it folds on its own measure -- see `.where`. */
+@media (max-width: 560px) {
+  /* The three figures are not on this screen at all -- `Strip` renders them below the breakdown
+     here, and leaves the sentence they argue for under the bill it is about. Measured before
+     giving up on fitting them: caption and figure want 168+120, 184+138 and 158+164 against the
+     346px there is, so two of the three cannot be made to share a line at any size worth
+     reading. What is left is one cell, so the columns go. */
+  .strip {
+    grid-template-columns: 1fr;
+    margin-top: 10px;
+  }
+  /* The rule that used to close the header now opens the figure. With the eyebrow and the
+     caption gone, what this line has left to separate is the title from the number rather than
+     the number from the body -- and the standfirst under it belongs to the figure, not to the
+     chart, so nothing should be drawn between those two. */
+  /* Centred rather than on the figure's baseline: a baseline puts the *first* of the two lines on
+     it and hangs the second one below the figure, which reads as bottom-heavy and costs the row
+     that line's height. Centred, the pair sits against the figure and the row is as tall as the
+     figure alone. */
+  .card[data-face="report"] .chead > .cfig {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px solid var(--ink);
+  }
+  /* Two lines, hard right, in the corner the caption alone holds on a wide window: what the
+     figure covers, and the lens it was read under -- which nothing else on this width says, and
+     which the panel can change out from under it. */
+  .card[data-face="report"] .qual {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    order: 1;
+    margin-left: auto;
+    text-align: right;
+  }
+  /* The leading is the whole gap here -- there is no margin between the two -- so it is what
+     sets how much air they sit in. */
+  .qual .billed {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    line-height: 1.08;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    white-space: nowrap;
+  }
+  .strip[data-only="thesis"] {
+    border-top: 0;
+    border-bottom: 0;
+  }
+  .strip[data-only="thesis"] > div {
+    padding: 8px 0 10px;
+    border-bottom: 0;
+  }
+  /* Standfirst rather than headline. It is the report's argument and worth keeping in front of
+     the reader, but it is a claim the picture below is about to make on its own -- so at this
+     width it stops competing with the figure above it for the eye and gets out of the way. The
+     one accented word carries it now, which is enough to be found again. */
+  .thesis {
+    font-size: 12.5px;
+    font-weight: 400;
+    line-height: 1.45;
+    letter-spacing: 0;
+    color: var(--ink2);
+  }
+  /* Below the breakdown, where it is a section of its own rather than a band of the card. */
+  .strip[data-only="figures"] {
+    margin-top: 26px;
+  }
+  .strip > div:not(:first-child) {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+  .strip .cap {
+    order: -1;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-top: 0;
+    /* The tracking and the caps are what made these two lines; at this size they are what has to
+       give, not the words. */
+    text-transform: none;
+    letter-spacing: 0.01em;
+    font-size: 10.5px;
+    /* The two longest still take two lines at any size worth reading; balanced, that reads as
+       two lines rather than as one line with a word left over. */
+    text-wrap: balance;
+  }
+  .strip .big,
+  .strip .carryrow {
+    flex: 0 0 auto;
+  }
+  .big,
+  .carryrow .to {
+    font-size: 18px;
+  }
+  .big .sm {
+    font-size: 13px;
+  }
+  /* A line of the first screen that tells the reader nothing they cannot see: the page's own name
+     is already the headline, and the counts are readable off the report underneath. On the empty
+     face it stays -- there the eyebrow is the only thing naming the page at all. */
+  .card[data-face="report"] .eyebrow {
+    display: none;
+  }
+  /* With those gone the header is a title and a figure, and the air between them was measured
+     for a four-line block. */
+  .chead {
+    row-gap: 0;
+  }
+  .chead h1 {
+    margin-top: 0;
+  }
+  /* The caption explains how to read a picture, and the breadcrumb walks back out of one -- both
+     of which are things to do *after* seeing it. Above the chart they were four lines between
+     the reader and the only thing on the card worth scrolling to. */
+  .cardslot > .chartslot {
+    order: 1;
+  }
+  .cardslot > .mosaichead {
+    order: 2;
+  }
+  .cardslot > .cardfoot {
+    order: 3;
+  }
+  /* The heading and the figure stop sharing a line: below this the two-column head left the
+     title about one word wide. Stacked, the caption lands directly over the figure it captions,
+     which is the pairing the two-column form was arranging by other means. */
+  .chead {
+    grid-template-columns: 1fr;
+    row-gap: 2px;
+  }
+  .chead h1 {
+    font-size: 27px;
+  }
+  .chead .eyebrow,
+  .chead .billed,
+  .chead h1,
+  .chead .total {
+    grid-area: auto;
+    justify-self: start;
+  }
+  .chead .billed {
+    margin-top: 7px;
+  }
+  .cfig {
+    text-align: left;
+  }
+  .total {
+    justify-content: flex-start;
+  }
+}
+/* A finger is not a pointer: the toolbar's controls are sized off their 10.5px type, which on
+   a touch screen is a target smaller than the thing pressing it. */
+@media (pointer: coarse) {
+  .linkish {
+    padding: 11px 0 10px;
+  }
+  .seg button,
+  .seg .langsel {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .crumbs button {
+    padding: 8px 0;
+  }
+  .legrow {
+    padding-top: 9px;
+    padding-bottom: 9px;
+  }
+}
+/* The empty face's contents, filling the whole interior of the card: the frame is the drop
+   target, so the target has to be the frame's inside rather than a panel sitting in the middle
+   of it. */
+.dropzone {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  text-align: center;
+  padding: 18px 0 0;
+  transition: background var(--duration-quick) var(--ease-out);
+}
+.dropzone[data-over="1"] {
+  background: var(--accent-soft);
+}
+/* Two classes deep on purpose: `.dropzone p` below is a class *and* a type, so it outranks a
+   bare `.lede` however far down the file that is written -- which is how the old lede ended up
+   quietly taking the small size it was meant to override. */
+.invite .lede {
+  color: var(--ink2);
+  max-width: 58ch;
+  margin: -4px auto 0;
+  font-size: 15px;
+  line-height: 1.55;
+  text-wrap: balance;
+}
+/* The middle band takes the slack, so the invitation sits on the card's centre line whatever the
+   window has done to the two bands around it. */
+.invite {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+  /* The status line below the group is empty until a folder is picked, and an empty line still
+     takes its 22px and the gap above it -- so centring on the flow box sat the whole visible
+     group half of that above the middle of the card, which is the lopsided look. */
+  padding-top: 40px;
+}
+.dropzone h2 {
+  font-size: clamp(21px, 2.4vw, 27px);
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.018em;
+}
+.dropzone p {
+  color: var(--ink2);
+  margin: 0;
+  max-width: 56ch;
+  font-size: 14px;
+}
+.picks {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  /* On top of the band's own 18, because the button is not one of the lines around it: the
+     heading and the lede are a sentence in two parts and belong together at 18, and the help
+     below already stands off by 34. */
+  margin: 12px 0 0;
+}
+/* The box under the button, and the two faces it takes: the way into the hidden folder before a
+   pick, the transcripts that came back after one. */
+.swap {
+  /* The panel's grid, in the units the list is written in: a row's height, the air above and
+     below the rows, and the label's line with its own air. */
+  --file-row: 20px;
+  --file-pad: 6px;
+  --found-head: 21px;
+  display: grid;
+  width: 100%;
+  /* A shade under the heading's own measure, so the block below it lines up with the block above
+     rather than introducing a third width down the middle of the card. */
+  max-width: 58ch;
+  min-height: 74px;
+  /* The step from the ask to the help: on top of the band's own 18, so the button and the note
+     under it are two things rather than one stack of four evenly spaced rows. */
+  margin: 16px 0 0;
+  transition: min-height var(--intake-swap-dur) var(--intake-swap-ease);
+}
+/* The label, the rows it stands over, the panel's padding and its hairline -- added up rather
+   than rounded to a number that looked about right, because everything below measures from it. */
+.swap[data-face="files"] {
+  min-height: calc(
+    var(--found-head) + var(--file-row) * var(--file-rows) + var(--file-pad) * 2 + 2px
+  );
+}
+/* The stack, and the state both faces rest in when they are not the one on show: away from the
+   middle, blurred out, and gone from the tab order. */
+.swap > * {
+  grid-area: 1 / 1;
+  opacity: 0;
+  filter: blur(var(--blur-small));
+  /* Held visible for the length of the exit and dropped on its last frame: a face that turned
+     invisible on the first would have nothing left to fade. */
+  visibility: hidden;
+  transition:
+    opacity var(--intake-swap-dur) var(--intake-swap-ease),
+    transform var(--intake-swap-dur) var(--intake-swap-ease),
+    filter var(--intake-swap-dur) var(--intake-swap-ease),
+    visibility 0s linear var(--intake-swap-dur);
+}
+.swap > [data-on="1"] {
+  opacity: 1;
+  filter: blur(0);
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity var(--intake-swap-dur) var(--intake-swap-ease),
+    transform var(--intake-swap-dur) var(--intake-swap-ease),
+    filter var(--intake-swap-dur) var(--intake-swap-ease),
+    visibility 0s linear 0s;
+}
+/* The way into the hidden folder. */
+.howto {
+  /* The hint's containing block, which is the whole point: see `.howto .t-tt`. */
+  position: relative;
+  align-self: center;
+  text-align: center;
+  /* Upward, because it is being answered: the note is the question the pick has just settled. */
+  transform: translateY(-10px);
+}
+.howhead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  margin-bottom: 7px;
+}
+/* The same line, held to an exact height instead of a line box plus a margin: what is left of
+   the box after it is the panel, and the panel has to come out at a whole number of rows. */
+.foundhead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 9px;
+  height: var(--found-head);
+}
+/* Files finished over files found, in the same mono caps as the verb beside it and a step up the
+   ink, because it is the part that moves. */
+.foundnum {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink2);
+  white-space: pre;
+}
+.howlbl,
+.foundlbl {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+/* The count and the megabytes, which are the only part of that line that changes: one step up
+   the ink rather than two, because a label set in caps at 10.5px cannot carry full contrast on
+   part of itself without reading as two labels. */
+.foundlbl b {
+  color: var(--ink2);
+}
+/* The transcripts that came back. */
+.found {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* Up from below, the way an answer arrives. */
+  transform: translateY(14px);
+}
+/* The panel the names are written into: exactly the rows the box was sized for, and a window
+   rather than a scroller -- what brings a name into view is the column moving under it, and a
+   scrollbar beside a list that scrolls itself is an offer to fight it. */
+.foundbox {
+  position: relative;
+  flex: 1;
+  /* The flex minimum that would otherwise be all sixty rows' own height. */
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  /* Sunk, where the note it replaced is drawn on the card's own paper. */
+  background: var(--sunk);
+}
+/* Out of flow, which is the whole reason the panel is the height it was asked for. */
+.filelist {
+  position: absolute;
+  inset: var(--file-pad) 10px;
+  overflow: hidden;
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink3);
+}
+/* The column, and the thing that keeps the writing in the window: it is translated up a row for
+   every line past the panel's last, and it transitions between the two, so a name arriving at
+   the bottom carries the ones above it up out of the way. */
+.fileroll {
+  transition-property: transform;
+  transition-timing-function: var(--ease-smooth-out);
+  transition-duration: var(--duration-quick);
+}
+/* A line does not travel in: what happens when it arrives is the name writing itself, and a row
+   that slides as well is two arrivals for one event. */
+@keyframes t-file-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* A fixed height rather than a line box, because the roll above counts in rows: a row that is
+   20.125px tall puts the column a pixel out by the eighth jump. */
+.fileline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--file-row);
+  animation: t-file-in var(--duration-micro) var(--ease-out) both;
+}
+/* The name, and the ground the cover is measured against: the box is the text's own width, so
+   one step of the cover is exactly one character of a monospaced name. */
+.filenm {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The typing. */
+@keyframes t-type {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    /* Two characters past the end of the name rather than exactly on it, which is what makes the
+     * second to last* step the one that finishes the name. */
+    transform: translateX(calc(100% + 2ch));
+  }
+}
+.filecover {
+  position: absolute;
+  inset: 0;
+  background: var(--sunk);
+  border-left: 1px solid var(--accent);
+  /* The duration, the delay and the step count are the row's own -- one beat per character, from
+     this row's turn onward -- so they are set on the element. */
+  animation-name: t-type;
+  animation-fill-mode: both;
+}
+/* Taken away entirely rather than left still. */
+@media (prefers-reduced-motion: reduce) {
+  .filecover {
+    display: none;
+  }
+}
+/* The prompt on the empty line under the names: the folder has been read, the parse has not
+   finished, and this is the page saying so in the one vocabulary the panel has. */
+@keyframes t-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.filewait {
+  width: 1px;
+  height: 12px;
+  background: var(--accent);
+  animation: t-blink 900ms var(--ease-linear) infinite;
+}
+/* One square per transcript, on the grid every other mark on this page is drawn on. */
+.filedot {
+  flex: none;
+  width: 4px;
+  height: 4px;
+  background: currentColor;
+  opacity: 0.45;
+  transition:
+    background var(--duration-quick) var(--ease-out),
+    opacity var(--duration-quick) var(--ease-out);
+}
+.found[data-busy="1"] .filedot {
+  background: var(--accent);
+  opacity: 1;
+}
+/* The platform, and the way to the next one. */
+.osbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 8px;
+  border: 1px solid var(--hair);
+  background: var(--panel);
+  color: var(--ink2);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-smooth-out),
+    border-color var(--duration-fast) var(--ease-smooth-out);
+}
+.osbtn:hover,
+.osbtn:focus-visible {
+  color: var(--ink);
+  border-color: var(--rule);
+}
+/* This one hint goes beside its control rather than under it. */
+.howto .t-tt {
+  top: 50%;
+  right: auto;
+  left: calc(100% + 10px);
+  transform-origin: 0 50%;
+  transform: translateY(-50%) scale(var(--tt-scale));
+}
+.howto .t-tt-trigger:hover + .t-tt,
+.howto .t-tt-trigger:focus-visible + .t-tt {
+  transform: translateY(-50%) scale(1);
+}
+/* Below about 900px there is no longer 280px of card to the right of the chip, so the hint goes
+   back under the block, where the only thing it can cover is empty card. */
+@media (max-width: 900px) {
+  .howto .t-tt-host {
+    position: static;
+  }
+  .howto .t-tt {
+    top: calc(100% + 9px);
+    right: 0;
+    left: auto;
+    transform-origin: 100% 0;
+    transform: scale(var(--tt-scale));
+  }
+  .howto .t-tt-trigger:hover + .t-tt,
+  .howto .t-tt-trigger:focus-visible + .t-tt {
+    transform: scale(1);
+  }
+}
+/* Sized off the longest name, so walking the three does not shunt the row about. */
+.osname,
+.osname .t-text-swap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.osname {
+  min-width: 9.6ch;
+}
+.osface {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+/* A hair under the chip's own line, so the mark sits inside the cap height rather than pushing
+   the chip taller than the label beside it. */
+.osface .glyph {
+  width: 13px;
+  height: 13px;
+}
+.oscaret {
+  width: 9px;
+  height: 9px;
+  color: var(--ink3);
+  transition: transform var(--duration-fast) var(--ease-smooth-out);
+}
+.osbtn:hover .oscaret {
+  transform: translateY(1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .oscaret {
+    transition: none;
+  }
+}
+/* Overriding `.dropzone p`, which is a class and a type and so outranks a bare class however far
+   below it this is written. */
+/* `balance` rather than `pretty`: this is a two-line centred block, which is the case the two
+   algorithms disagree on -- `pretty` only protects the last line from being a runt, and a
+   centred pair of lines wants both the same length. */
+.howto p {
+  margin: 0;
+  max-width: none;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink2);
+  text-wrap: balance;
+}
+.howto code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  padding: 2px 5px;
+  color: var(--ink);
+  user-select: all;
+}
+.howto em {
+  font-style: normal;
+  color: var(--ink);
+  font-weight: 500;
+}
+/* The path is the ask, so it is set in the heading rather than described under it -- at the
+   heading's own size, in mono, with no box around it: a bordered chip inside a 27px line reads
+   as a button. */
+.dropzone h2 code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  letter-spacing: -0.01em;
+  user-select: all;
+}
+/* The two buttons on this face, and the only things on the page a first-time reader has to
+   press, so they are sized for that rather than to the toolbar's scale: 13px on a 16/34 pad
+   against the 11px on 9/16 it started at. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 13px;
+  font-family: var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 16px 34px;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-smooth-out),
+    border-color var(--duration-fast) var(--ease-smooth-out);
+}
+.btn:hover {
+  background: var(--sunk);
+}
+/* A shade over the cap height, so the mark sits as the tallest thing on the line rather than
+   matching the letters and disappearing into them. */
+.btn .glyph {
+  width: 16px;
+  height: 16px;
+}
+.btn.primary {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+/* The primary had no hover at all: `.btn.primary` and `.btn:hover` are the same specificity, so
+   the one written later won and the button did not answer the pointer. */
+.btn.primary:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+/* Both of them go out together while a walk is running: the second press would start a second
+   walk into the same column. */
+.btn:disabled {
+  cursor: progress;
+  opacity: 0.45;
+}
+.btn:disabled:hover {
+  background: var(--panel);
+}
+.btn.primary:disabled:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition: none;
+  }
+}
+/* On a rule across the foot of the card, where the report draws one under its chart: the same
+   band, so the two faces close the same way. */
+.privacy {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--ink3);
+  justify-content: center;
+  font-family: var(--mono);
+  width: 100%;
+  border-top: 1px solid var(--hair);
+  padding: 10px 0;
+}
+/* What went wrong, and only that: the progress a pick makes is narrated by the head of its own
+   list now, so this line no longer has two jobs and two colours. */
+.status {
+  font-size: 13px;
+  color: var(--accent);
+  min-height: 22px;
+}
+/* The folder's name inside the message, which is emphasis rather than a second colour: the line
+   is already the accent, and ink on an accent line reads as a correction to it. */
+.status b {
+  font-weight: 600;
+}
+/* Two columns on the same rule the report's footnotes sit on, and the full width of the shell:
+   this is what stands under the empty card, so it holds the same ground the breakdown and the
+   footnotes hold under a full one. */
+.where {
+  margin-top: 34px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--ink2);
+  display: grid;
+  /* Two columns that fold to one on their own, rather than at the narrow-window breakpoint:
+     every rule for the empty face is written below that block, so an override in it would be
+     overridden right back. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 60ch), 1fr));
+  gap: 8px 24px;
+}
+.where > div {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 62ch;
+}
+.where p {
+  margin: 0;
+}
+.where code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  padding: 2px 6px;
+  user-select: all;
+}
+.where .whead {
+  margin-top: 8px;
+  color: var(--ink);
+}
+.where .whead:first-child {
+  margin-top: 0;
+}
+/* Set at the size of the sentence around it rather than a point under it. */
+kbd {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1;
+  display: inline-block;
+  min-width: 1.05em;
+  text-align: center;
+  padding: 3px 5px;
+  margin: 0 1px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--hair);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  vertical-align: baseline;
+}
+.scopebar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink3);
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+  padding: 8px 0;
+  margin-bottom: 14px;
+}
+.scopebar b {
+  color: var(--ink2);
+  font-weight: 600;
+}
+/* a mark with nothing underneath shouldn't advertise a click */
+.col[data-flat="1"] .colhead,
+.col[data-flat="1"] .segb {
+  cursor: default;
+}
+
+/* Motion — transitions.dev Six transitions from the skill, each still reading from its own
+   semantic variables so it can be retuned here rather than in the rule. */
+:root {
+  /* Motion tokens — the shared scale every transition below reads from. */
+  --duration-stagger: 40ms; /* per-item stagger offset */
+  --duration-micro: 80ms; /* tooltip/path delay, shake segment, large stagger */
+  --duration-quick: 150ms; /* modal/dropdown close, text swap, tooltip appear */
+  --duration-fast: 250ms; /* icon swap, dropdown/modal open, tabs sliding, page slide */
+  --duration-medium: 350ms; /* panel close, toast close */
+  --duration-slow: 400ms; /* panel open, skeleton content reveal, input clear */
+  --duration-very-slow: 500ms; /* emphasis moments, badge appear, text reveal, success check */
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1); /* open + close, page slide, position change */
+  --ease-in-out: ease-in-out; /* icon swap, text swap, text reveal, skeleton reveal */
+  --ease-out: ease-out; /* tooltip open / close */
+  --ease-linear: linear; /* shimmer, skeleton pulse, spinner */
+  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1); /* badge pop open */
+  --ease-bounce-strong: cubic-bezier(0.34, 3.85, 0.64, 1); /* bouncy hover-out */
+  --distance-micro: 4px; /* text swap */
+  --distance-small: 6px; /* error shake (small segment) */
+  --distance-base: 8px; /* badge diagonal reveal, page slide */
+  --distance-medium: 12px; /* text reveal */
+  --distance-large: 30px; /* check badge appear */
+  --scale-large: 0.96; /* modal open / close */
+  --scale-medium: 0.97; /* dropdown open */
+  --scale-small: 0.98; /* tooltip open */
+  --scale-tiny: 0.99; /* dropdown close */
+  --blur-small: 2px; /* panel reveal, icon swap, text swap, number pop-in */
+  --blur-medium: 3px; /* page slide, text reveal */
+  --blur-large: 8px; /* success check open */
+
+  /* Tabs sliding */
+  --tabs-dur: var(--duration-fast);
+  --tabs-ease: var(--ease-smooth-out);
+  --tabs-text-muted: var(--ink2);
+  --tabs-text-active: var(--ink);
+  --tabs-pill-bg: var(--ink);
+  /* Rolling figure. */
+  --number-flow-mask-height: 0.28em;
+  --number-flow-mask-width: 0.25em;
+  /* And how often the figure is given a new number to roll to, while a folder is being read. */
+  --figure-beat: 160ms;
+  /* Text states swap */
+  --text-swap-dur: var(--duration-quick);
+  --text-swap-translate-y: var(--distance-micro);
+  --text-swap-blur: var(--blur-small);
+  --text-swap-ease: var(--ease-in-out);
+  /* Card resize. */
+  --resize-dur: 300ms;
+  --resize-ease: var(--ease-smooth-out);
+  /* Panel reveal. */
+  --panel-open-dur: var(--duration-slow);
+  --panel-close-dur: var(--duration-medium);
+  --panel-translate-y: 24px;
+  --panel-exit-y: calc(var(--panel-translate-y) * -1);
+  --panel-blur: var(--blur-small);
+  --panel-ease: var(--ease-smooth-out);
+
+  /* How long the page under the card waits before it follows the card. */
+  --face-stagger: var(--duration-quick);
+
+  /* The breakdown filtering itself. */
+  --filter-dur: var(--duration-fast);
+  --filter-ease: var(--ease-smooth-out);
+  --find-settle: var(--duration-quick);
+
+  /* Covering the dollars. */
+  --mask-dur: var(--duration-fast);
+  --mask-ease: var(--ease-in-out);
+
+  /* Bars drawing themselves. */
+  --bar-dur: var(--duration-fast);
+  --bar-ease: var(--ease-smooth-out);
+  --bar-stagger: var(--duration-stagger);
+  --row-stagger: 18ms;
+
+  /* The disc unfurling, which is two movements and one arrival: every sector opening across its
+     own width, and the rings growing out of the hole while they do. */
+  --sun-ring-dur: var(--duration-medium);
+  --sun-ring-ease: var(--ease-smooth-out);
+  --sun-ring-stagger: 120ms;
+  --sun-fan-dur: var(--duration-slow);
+  --sun-fan-ease: var(--ease-smooth-out);
+  /* A scale about the centre, so what it sets is how far each ring is from where it belongs: at
+     0.88 the outer edge travels about eleven units of a 96-unit radius and the innermost ring
+     starts just under the readout, which is where it comes out from. */
+  --sun-ring-from: 0.88;
+
+  /* The mosaic being laid down, which is the two claims its own header makes -- column width is
+     a share of the bill, block height is a share of the column -- said in that order. */
+  --mos-wipe-dur: var(--duration-slow);
+  --mos-wipe-ease: var(--ease-smooth-out);
+  --mos-block-dur: var(--duration-fast);
+  --mos-block-ease: var(--ease-smooth-out);
+  --mos-block-stagger: var(--duration-stagger);
+
+  /* The intake's two faces. */
+  --intake-swap-dur: var(--duration-fast);
+  --intake-swap-ease: var(--ease-smooth-out);
+
+  /* Controls growing into the toolbar. */
+  --grow-in-dur: var(--duration-fast);
+  --grow-out-dur: var(--duration-quick);
+  --grow-distance: var(--distance-base);
+  --grow-blur: var(--blur-small);
+  --grow-ease: var(--ease-smooth-out);
+
+  /* Tooltip open / close. */
+  --tt-in-dur: var(--duration-quick);
+  --tt-out-dur: 50ms;
+  --tt-delay: 320ms;
+  --tt-scale: var(--scale-small);
+  --tt-in-ease: var(--ease-out);
+  --tt-out-ease: var(--ease-out);
+  --tt-bg: var(--ink);
+  --tt-fg: var(--paper);
+}
+
+/* Tabs sliding — the pressed state of every segmented control, as one pill that travels rather
+   than four backgrounds switching on. */
+.seg.t-tabs {
+  position: relative;
+}
+.t-tab {
+  position: relative;
+  z-index: 1;
+  color: var(--tabs-text-muted);
+  transition: color var(--tabs-dur) var(--tabs-ease);
+}
+.t-tab:not([aria-pressed="true"]):hover {
+  color: var(--tabs-text-active);
+}
+/* The pill is the ink now, so the pressed button hands its own ground back. */
+.seg.t-tabs button[aria-pressed="true"] {
+  background: transparent;
+  color: var(--paper);
+}
+.t-tabs-pill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  background: var(--tabs-pill-bg);
+  transform: translateX(0);
+  transition:
+    transform var(--tabs-dur) var(--tabs-ease),
+    width var(--tabs-dur) var(--tabs-ease);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-tabs-pill,
+  .t-tab {
+    transition: none !important;
+  }
+}
+
+/* Tooltip open/close — the hint on the controls whose label is a symbol or an abbreviation. */
+.t-tt-host {
+  position: relative;
+}
+.t-tt {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 270px;
+  padding: 7px 9px;
+  background: var(--tt-bg);
+  color: var(--tt-fg);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  text-align: left;
+  text-transform: none;
+  transform: scale(var(--tt-scale));
+  transform-origin: 100% 0;
+  opacity: 0;
+  pointer-events: none;
+  /* Default rule controls the LEAVE state. */
+  transition:
+    opacity var(--tt-out-dur) var(--tt-out-ease),
+    transform var(--tt-out-dur) var(--tt-out-ease);
+}
+/* The delay belongs ONLY to the hover rule so leaving the trigger snaps the delay back to 0 and
+   the disappear plays immediately. */
+.t-tt-trigger:hover + .t-tt,
+.t-tt-trigger:focus-visible + .t-tt {
+  opacity: 1;
+  transform: scale(1);
+  transition-duration: var(--tt-in-dur);
+  transition-timing-function: var(--tt-in-ease);
+  transition-delay: var(--tt-delay);
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-tt {
+    transition: none !important;
+  }
+}
+/* A hint is a hover affordance, and a device with no hover fires it on tap instead -- where it
+   lands on top of whatever the reader was about to press next. Clipped rather than removed: it
+   is still the control's accessible description, and `display: none` would take that off the
+   accessibility tree along with the box. Clipping also settles it whatever the placement rules
+   further up the file say, since a 1px box with its overflow hidden is invisible however
+   opaque something else decides to make it. */
+@media (hover: none) {
+  .t-tt {
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    transition: none;
+  }
+}
+
+/* Text states swap — the copy and share buttons, whose label is a running account of what just
+   happened. */
+.t-text-swap {
+  display: inline-block;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--text-swap-dur) var(--text-swap-ease),
+    filter var(--text-swap-dur) var(--text-swap-ease),
+    opacity var(--text-swap-dur) var(--text-swap-ease);
+  will-change: transform, filter, opacity;
+}
+.t-text-swap.is-exit {
+  transform: translateY(calc(var(--text-swap-translate-y) * -1));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+}
+.t-text-swap.is-enter-start {
+  transform: translateY(var(--text-swap-translate-y));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-text-swap {
+    transition: none !important;
+  }
+}
+
+/* Text states crossfade — the sunburst's readout, whose copy changes under the pointer rather
+   than because something happened. */
+.t-text-cross {
+  display: block;
+  position: relative;
+}
+/* The variant that sits inside a sentence: `inline-block`, so the box has a width to interpolate
+   and the words after it are carried along by it. */
+.t-text-cross[data-inline] {
+  display: inline-block;
+}
+.t-text-cross[data-inline] > .leg {
+  white-space: nowrap;
+}
+.t-text-cross[data-inline] > .leg[data-gone] {
+  overflow: hidden;
+}
+.t-text-cross > .leg {
+  display: block;
+  animation: t-text-cross-in var(--text-swap-dur) var(--text-swap-ease) both;
+}
+.t-text-cross > .leg[data-gone] {
+  position: absolute;
+  inset: 0;
+  animation-name: t-text-cross-out;
+}
+@keyframes t-text-cross-in {
+  from {
+    opacity: 0;
+    filter: blur(var(--text-swap-blur));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+@keyframes t-text-cross-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(var(--text-swap-blur));
+  }
+}
+/* Nothing fades, so the two would stack. */
+@media (prefers-reduced-motion: reduce) {
+  .t-text-cross > .leg {
+    animation: none !important;
+  }
+  .t-text-cross > .leg[data-gone] {
+    display: none;
+  }
+}
+
+/* Card resize — the frame, which is a different shape for each chart. */
+.t-resize {
+  transition:
+    width var(--resize-dur) var(--resize-ease),
+    height var(--resize-dur) var(--resize-ease),
+    aspect-ratio var(--resize-dur) var(--resize-ease);
+  will-change: width, height;
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-resize {
+    transition: none !important;
+  }
+}
+
+/* Panel reveal — the breakdown's two lists and the card's two charts, each sliding into the
+   region the other left. */
+.chartslot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* The card's own panel makes the same claim on the card's column that the chart makes on it,
+   since what it holds is either the chart's four rows or the drop zone. */
+.cardslot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Everything under the card, which is most of the page's height. */
+.below {
+  --panel-blur: 0px;
+}
+.t-panel-slide {
+  transform: translateY(var(--panel-translate-y));
+  opacity: 0;
+  filter: blur(var(--panel-blur));
+  pointer-events: none;
+  transition:
+    transform var(--panel-close-dur) var(--panel-ease),
+    opacity var(--panel-close-dur) var(--panel-ease),
+    filter var(--panel-close-dur) var(--panel-ease);
+  will-change: transform, opacity, filter;
+}
+/* A panel being *shown the door* rather than one that has not arrived yet: same closed state,
+   opposite side. */
+.t-panel-slide[data-leaving="1"] {
+  transform: translateY(var(--panel-exit-y));
+}
+.t-panel-slide[data-open="true"] {
+  transform: translateY(0);
+  opacity: 1;
+  filter: blur(0);
+  pointer-events: auto;
+  transition:
+    transform var(--panel-open-dur) var(--panel-ease),
+    opacity var(--panel-open-dur) var(--panel-ease),
+    filter var(--panel-open-dur) var(--panel-ease);
+}
+/* The working, after the answer. */
+.below.t-panel-slide[data-open="true"],
+.below.t-panel-slide[data-leaving="1"] {
+  transition-delay: var(--face-stagger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-panel-slide {
+    transition: none !important;
+  }
+}
+
+/* Which way the page is going. */
+.shell[data-dir="back"] {
+  --panel-translate-y: -24px;
+}
+
+/* The screen change, as a view transition — the drop zone becoming the report, and the report
+   becoming the drop zone again. */
+.card {
+  view-transition-name: vt-card;
+}
+.chead .eyebrow {
+  view-transition-name: vt-eyebrow;
+}
+/* The heading is named a word at a time rather than as a line, because between the two faces it
+   is not one line becoming another -- it is the same three words with two taken out from under
+   them. */
+.chead h1 [data-w="where"] {
+  view-transition-name: vt-w-where;
+}
+.chead h1 [data-w="your"] {
+  view-transition-name: vt-w-your;
+}
+.chead h1 [data-w="money"] {
+  view-transition-name: vt-w-money;
+}
+.chead h1 [data-w="did"] {
+  view-transition-name: vt-w-did;
+}
+.chead h1 [data-w="go"] {
+  view-transition-name: vt-w-go;
+}
+.chead h1 [data-w="went"] {
+  view-transition-name: vt-w-went;
+}
+.chead .billed {
+  view-transition-name: vt-billed;
+}
+.chead .total {
+  view-transition-name: vt-total;
+}
+
+/* The morph, at the page's own tempo rather than the browser's 250ms. */
+:root[data-turn]::view-transition-group(*),
+:root[data-turn]::view-transition-old(*),
+:root[data-turn]::view-transition-new(*) {
+  animation-duration: var(--panel-close-dur);
+  animation-timing-function: var(--panel-ease);
+}
+
+/* Text does not stretch. */
+::view-transition-old(vt-eyebrow),
+::view-transition-new(vt-eyebrow),
+::view-transition-old(vt-w-where),
+::view-transition-new(vt-w-where),
+::view-transition-old(vt-w-your),
+::view-transition-new(vt-w-your),
+::view-transition-old(vt-w-money),
+::view-transition-new(vt-w-money),
+::view-transition-old(vt-w-did),
+::view-transition-new(vt-w-did),
+::view-transition-old(vt-w-go),
+::view-transition-new(vt-w-go),
+::view-transition-old(vt-w-went),
+::view-transition-new(vt-w-went) {
+  width: auto;
+  height: 100%;
+  object-fit: none;
+  object-position: left top;
+}
+::view-transition-old(vt-billed),
+::view-transition-new(vt-billed),
+::view-transition-old(vt-total),
+::view-transition-new(vt-total) {
+  width: auto;
+  height: 100%;
+  object-fit: none;
+  object-position: right top;
+}
+
+/* The copy has a swap of its own for the browsers with no view transition to run -- see
+   `TextSwap` in `Motion.tsx`, which is what changes these same words on the fallback path. */
+:root[data-turn] .t-text-swap {
+  transform: none;
+  filter: none;
+  opacity: 1;
+  transition: none;
+}
+
+/* The transition is not started at all when motion is reduced -- see `reduced()` in `App.tsx` --
+   so this is the belt to that braces: `*` does not match a pseudo-element, which means the
+   blanket rule at the top of this file cannot reach any of the above. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* The breakdown filtering itself, as the page's second view transition. */
+:root[data-filter] .pan,
+:root[data-filter] .pi,
+:root[data-filter] tbody > tr {
+  view-transition-name: var(--vt, none);
+}
+
+/* The query box is exempt from its own transition. */
+:root[data-filter] .bctl {
+  view-transition-name: vt-find;
+}
+:root[data-filter]::view-transition-old(vt-find) {
+  display: none;
+}
+:root[data-filter]::view-transition-new(vt-find) {
+  animation: none;
+}
+
+/* Faster than the turn, and for the same reason the bars are: a filter is an adjustment to
+   something the reader is already looking at, not an arrival. */
+:root[data-filter]::view-transition-group(*),
+:root[data-filter]::view-transition-old(*),
+:root[data-filter]::view-transition-new(*) {
+  animation-duration: var(--filter-dur);
+  animation-timing-function: var(--filter-ease);
+}
+
+/* Covering the dollars, as the page's third view transition and the one that adds no names. */
+:root[data-mask] .chead .eyebrow,
+:root[data-mask] .chead h1 [data-w],
+:root[data-mask] .chead .billed,
+:root[data-mask] .chead .total {
+  view-transition-name: none;
+}
+:root[data-mask]::view-transition-group(*),
+:root[data-mask]::view-transition-old(*),
+:root[data-mask]::view-transition-new(*) {
+  animation-duration: var(--mask-dur);
+  animation-timing-function: var(--mask-ease);
+}
+
+/* Controls growing into the toolbar — the five that only mean something once there is a bill. */
+@keyframes t-grow-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--grow-distance));
+    filter: blur(var(--grow-blur));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+}
+@keyframes t-grow-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(var(--grow-distance));
+    filter: blur(var(--grow-blur));
+  }
+}
+.t-grow {
+  display: inline-flex;
+  animation: t-grow-in var(--grow-in-dur) var(--grow-ease) both;
+}
+.t-grow[data-i="1"] {
+  animation-delay: var(--duration-stagger);
+}
+.t-grow[data-i="2"] {
+  animation-delay: calc(var(--duration-stagger) * 2);
+}
+.t-grow[data-i="3"] {
+  animation-delay: calc(var(--duration-stagger) * 3);
+}
+.t-grow[data-i="4"] {
+  animation-delay: calc(var(--duration-stagger) * 4);
+}
+/* Out together, and the delays go with them: a stagger on the way out is choreography nobody
+   asked for on a control they have already finished with. */
+.toolbar[data-leaving="1"] .t-grow {
+  animation: t-grow-out var(--grow-out-dur) var(--grow-ease) both;
+  animation-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .t-grow,
+  .toolbar[data-leaving="1"] .t-grow {
+    animation: none !important;
+  }
+}
+
+/* Bars drawing themselves — every bar in the breakdown, wiped out from its left edge rather than
+   already at length when the panel arrives. */
+@keyframes t-bar-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Where in the sequence a given bar falls, as two indices the delay below multiplies out. */
+.pan {
+  --pan-i: 0;
+}
+.panels > .pan:nth-child(2) {
+  --pan-i: 1;
+}
+.panels > .pan:nth-child(3) {
+  --pan-i: 2;
+}
+.panels > .pan:nth-child(4) {
+  --pan-i: 3;
+}
+.panels > .pan:nth-child(5) {
+  --pan-i: 4;
+}
+.panels > .pan:nth-child(6) {
+  --pan-i: 5;
+}
+.panels > .pan:nth-child(7) {
+  --pan-i: 6;
+}
+.panels > .pan:nth-child(8) {
+  --pan-i: 7;
+}
+.panels > .pan:nth-child(9) {
+  --pan-i: 8;
+}
+.panels > .pan:nth-child(n + 10) {
+  --pan-i: 9;
+}
+.pi,
+tbody > tr {
+  --row-i: 1;
+}
+.panitems > .pi:nth-child(2),
+tbody > tr:nth-child(2) {
+  --row-i: 2;
+}
+.panitems > .pi:nth-child(3),
+tbody > tr:nth-child(3) {
+  --row-i: 3;
+}
+.panitems > .pi:nth-child(4),
+tbody > tr:nth-child(4) {
+  --row-i: 4;
+}
+.panitems > .pi:nth-child(5),
+tbody > tr:nth-child(5) {
+  --row-i: 5;
+}
+.panitems > .pi:nth-child(6),
+tbody > tr:nth-child(6) {
+  --row-i: 6;
+}
+.panitems > .pi:nth-child(7),
+tbody > tr:nth-child(7) {
+  --row-i: 7;
+}
+.panitems > .pi:nth-child(8),
+tbody > tr:nth-child(8) {
+  --row-i: 8;
+}
+.panitems > .pi:nth-child(9),
+tbody > tr:nth-child(9) {
+  --row-i: 9;
+}
+.panitems > .pi:nth-child(10),
+tbody > tr:nth-child(10) {
+  --row-i: 10;
+}
+.panitems > .pi:nth-child(11),
+tbody > tr:nth-child(11) {
+  --row-i: 11;
+}
+.panitems > .pi:nth-child(n + 12),
+tbody > tr:nth-child(n + 12) {
+  --row-i: 12;
+}
+
+/* The panel's own bar leads its rows: `--row-i` starts at 1 for the first row, so the headline
+   bar at 0 is always a beat ahead of the list underneath it. */
+.pan .track > span,
+.pan .tk > span,
+.magbar {
+  transform-origin: left center;
+  animation: t-bar-draw var(--bar-dur) var(--bar-ease) both;
+}
+.pan .track > span,
+.pan .tk > span {
+  animation-delay: calc(var(--pan-i) * var(--bar-stagger));
+}
+.pan .pi .tk > span {
+  animation-delay: calc(var(--pan-i) * var(--bar-stagger) + var(--row-i) * var(--row-stagger));
+}
+/* The table is one panel's worth of rows rather than a grid of them, so it takes the row ladder
+   alone -- there is no across for `--bar-stagger` to count. */
+.magbar {
+  animation-delay: calc(var(--row-i) * var(--row-stagger));
+}
+@media (prefers-reduced-motion: reduce) {
+  .pan .track > span,
+  .pan .tk > span,
+  .magbar {
+    animation: none !important;
+  }
+}
+
+/* The disc unfurling — every sector opening across its own width at once, with the rings growing
+   out of the hole while they do. */
+@keyframes t-sun-fan {
+  from {
+    stroke-dasharray: 0 360;
+  }
+}
+@keyframes t-ring-out {
+  from {
+    transform: scale(var(--sun-ring-from));
+    opacity: 0;
+  }
+}
+/* The dash is in degrees, because the circle in the mask declares `pathLength="360"`: a dash as
+   long as this sector's sweep, then a gap as long as the whole turn, so the pattern cannot come
+   round and paint a second wedge somewhere it does not mean. */
+.sunfan {
+  stroke-dasharray: var(--span) 360;
+  animation: t-sun-fan var(--sun-fan-dur) var(--sun-fan-ease) both;
+  /* One beat in, alongside ring 0: the sector's width and its first ring are one arrival, and a
+     fan that opened before the readout's own beat would be uncovering a wedge with nothing in it
+     yet. */
+  animation-delay: var(--sun-ring-stagger);
+}
+/* Which ring this is, enumerated rather than read off the attribute, for the same reason the
+   panels' ladder is: there are three, and CSS has no arithmetic on an attribute's value. */
+.sunwedge {
+  --ring-i: 0;
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: t-ring-out var(--sun-ring-dur) var(--sun-ring-ease) both;
+  /* The ladder: one step for the readout in front of every ring, and one more per ring. */
+  animation-delay: calc((var(--ring-i) + 1) * var(--sun-ring-stagger));
+}
+.sunwedge[data-ring="1"] {
+  --ring-i: 1;
+}
+.sunwedge[data-ring="2"] {
+  --ring-i: 2;
+}
+.suncore > * {
+  animation: t-ring-out var(--sun-ring-dur) var(--sun-ring-ease) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sunfan,
+  .sunwedge,
+  .suncore > * {
+    animation: none !important;
+  }
+}
+
+/* The mosaic laying itself down — every column uncovering across its own width at once, with the
+   blocks inside each one filling down the stack while it does. */
+@keyframes t-mos-wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+@keyframes t-mos-fill {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+.col {
+  animation: t-mos-wipe var(--mos-wipe-dur) var(--mos-wipe-ease) backwards;
+}
+.segb {
+  animation: t-mos-fill var(--mos-block-dur) var(--mos-block-ease) backwards;
+  animation-delay: calc(var(--seg-i) * var(--mos-block-stagger));
+}
+/* Where in the stack a block falls, enumerated for the reason the panels' ladder is: CSS has no
+   arithmetic on `nth-child`. It stops at the seventh block and holds every later one there, so a
+   column that folds fourteen line items in arrives with its tail rather than trailing off the
+   end of the wipe. */
+.colsegs > .segb {
+  --seg-i: 0;
+}
+.colsegs > .segb:nth-child(2) {
+  --seg-i: 1;
+}
+.colsegs > .segb:nth-child(3) {
+  --seg-i: 2;
+}
+.colsegs > .segb:nth-child(4) {
+  --seg-i: 3;
+}
+.colsegs > .segb:nth-child(5) {
+  --seg-i: 4;
+}
+.colsegs > .segb:nth-child(6) {
+  --seg-i: 5;
+}
+.colsegs > .segb:nth-child(n + 7) {
+  --seg-i: 6;
+}
+/* Transposed, the two claims are the same two and are still made in that order -- so the roles
+   stay where they are and only the direction swaps: rows uncover down the block, blocks fill
+   across each row. */
+[data-lay="rows"] .col {
+  animation-name: t-mos-fill;
+}
+[data-lay="rows"] .segb {
+  animation-name: t-mos-wipe;
+}
+@media (prefers-reduced-motion: reduce) {
+  .col,
+  .segb {
+    animation: none !important;
+  }
+}
+
+/* And the one place none of the above may run: the PNG.
+   ───────────────────────────────────────────────────────────────────────────── The snapshot
+   hands the browser the card's own markup and this same stylesheet inside an `<img>`, and that
+   document starts its own clock -- a mount animation would be rasterised at whatever frame the
+   image happened to load on, which for anything holding its `from` keyframe through a delay is a
+   chart that is not there yet. */
+[data-snapshot],
+[data-snapshot] * {
+  animation: none !important;
+}
+
+/* The rest of the narrow window, down here rather than in the breakpoint block up the file.
+   ───────────────────────────────────────────────────────────────────────────── Every selector
+   below is one class deep and written *after* that block, so an override put beside its siblings
+   loses on source order and quietly does nothing -- which is how the drop zone came to be drawn
+   on top of the heading. The rule is the same one `.where` already carries: answer a late
+   selector from later still. */
+@media (max-width: 820px) {
+  /* The two panel slots and the empty face's own column: all four claim `flex: 1`, which is a
+     zero base size, so the card could never grow for what they hold. */
+  .cardslot,
+  .chartslot,
+  .dropzone,
+  .invite {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+  /* Nothing left to centre in, now that the card is only as tall as what it holds. */
+  .invite {
+    padding-top: 0;
+  }
+  /* The folder button takes the width, so it is easy to hit with a thumb. */
+  .picks {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn {
+    justify-content: center;
+    padding: 15px 20px;
+  }
+}
